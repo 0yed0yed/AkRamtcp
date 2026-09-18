@@ -55,8 +55,69 @@ class MainActivity : AppCompatActivity() {
         binding.applyKeys.setOnClickListener { applyKeys() }
         binding.floatBtn.setOnClickListener { checkAndToggleFloating() }
 
+        // IMPORT FROM HEX
+        binding.importBtn.setOnClickListener { importFromHex() }
+        binding.importClear.setOnClickListener {
+            binding.importHex.setText("")
+        }
+
         updateStatus()
         updateFloatButton()
+    }
+
+    private fun importFromHex() {
+        val hex = binding.importHex.text.toString().trim()
+        if (hex.isEmpty()) {
+            Toast.makeText(this, "الصق الـ hex الأول", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val result = MajorLoginParser.parse(hex)
+        if (result == null) {
+            Toast.makeText(this, "✗ مش قادر أفك الـ hex", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // حط KEY/IV في الـ inputs
+        binding.keyInput.setText(result.keyCsv())
+        binding.ivInput.setText(result.ivCsv())
+
+        // طبّق المفاتيح
+        applyKeysSilent(result.key, result.iv)
+
+        // Toast بالنتيجة
+        val msg = "✓ تم استخراج المفاتيح\n" +
+                "KEY: ${result.keyHex()}\n" +
+                "IV: ${result.ivHex()}"
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+    }
+
+    private fun applyKeys() {
+        try {
+            val keyText = binding.keyInput.text.toString().trim()
+            val ivText = binding.ivInput.text.toString().trim()
+            val key = parseKey(keyText)
+            val iv = parseKey(ivText)
+            if (key.size != 16 || iv.size != 16) {
+                Toast.makeText(this, "KEY & IV لازم 16 بايت", Toast.LENGTH_LONG).show()
+                return
+            }
+            applyKeysSilent(key, iv)
+            Toast.makeText(this, "✓ Keys applied", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "خطأ: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun applyKeysSilent(keyInts: IntArray, ivInts: IntArray) {
+        // حدّث المفاتيح في الـ service عن طريق الـ ProxyService
+        ProxyService.updateKeys(keyInts, ivInts)
+    }
+
+    private fun applyKeysSilent(key: ByteArray, iv: ByteArray) {
+        val k = IntArray(key.size) { key[it].toInt() and 0xFF }
+        val v = IntArray(iv.size) { iv[it].toInt() and 0xFF }
+        applyKeysSilent(k, v)
     }
 
     private fun startProxy() {
@@ -120,22 +181,6 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.float_on)
         else
             getString(R.string.float_off)
-    }
-
-    private fun applyKeys() {
-        try {
-            val keyText = binding.keyInput.text.toString().trim()
-            val ivText = binding.ivInput.text.toString().trim()
-            val key = parseKey(keyText)
-            val iv = parseKey(ivText)
-            if (key.size != 16 || iv.size != 16) {
-                Toast.makeText(this, "KEY & IV لازم 16 بايت", Toast.LENGTH_LONG).show()
-                return
-            }
-            Toast.makeText(this, "✓ Keys applied", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "خطأ: ${e.message}", Toast.LENGTH_LONG).show()
-        }
     }
 
     private fun parseKey(s: String): IntArray {

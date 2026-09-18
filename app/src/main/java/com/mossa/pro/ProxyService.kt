@@ -23,6 +23,14 @@ class ProxyService : Service() {
             private set
 
         var packetListener: ((PacketInfo) -> Unit)? = null
+
+        // مرجع للـ server عشان نقدر نحدّث المفاتيح
+        @Volatile private var serverRef: Socks5Server? = null
+
+        fun updateKeys(key: IntArray, iv: IntArray) {
+            serverRef?.setKeys(key, iv)
+            Log.i(TAG, "Keys updated: key=${key.joinToString(",")}")
+        }
     }
 
     private var server: Socks5Server? = null
@@ -44,7 +52,6 @@ class ProxyService : Service() {
         startForegroundNotification()
 
         server = Socks5Server(Config.PROXY_PORT) { info ->
-            // فلتر: بس الباكيتات المعروفة
             if (!PacketTypes.NAMES.containsKey(info.type)) {
                 return@Socks5Server
             }
@@ -59,6 +66,7 @@ class ProxyService : Service() {
 
             packetListener?.invoke(info)
         }
+        serverRef = server
         server?.start()
         isRunning = true
         starting.set(false)
@@ -68,6 +76,7 @@ class ProxyService : Service() {
     private fun stopServer() {
         server?.stop()
         server = null
+        serverRef = null
         isRunning = false
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()

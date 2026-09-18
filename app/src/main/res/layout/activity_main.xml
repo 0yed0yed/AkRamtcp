@@ -37,7 +37,6 @@
                 android:paddingTop="4dp"
                 android:letterSpacing="0.08"/>
 
-            <!-- status pill -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -116,6 +115,70 @@
                 android:background="@drawable/bg_btn_primary"
                 android:textColor="#0A0D12"
                 android:text="@string/float_off"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:stateListAnimator="@null"/>
+        </LinearLayout>
+
+        <!-- IMPORT FROM MAJOR LOGIN -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="14dp"
+            android:layout_marginTop="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/import_title"
+                    android:textColor="@color/accent"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:letterSpacing="0.12"/>
+
+                <TextView
+                    android:id="@+id/importClear"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/import_clear"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11sp"
+                    android:padding="4dp"/>
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/importHex"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_import_box"
+                android:padding="10dp"
+                android:hint="@string/import_hint"
+                android:textColorHint="@color/text_dim"
+                android:textColor="@color/text_bright"
+                android:textSize="10sp"
+                android:fontFamily="monospace"
+                android:gravity="top|start"
+                android:inputType="textMultiLine|textNoSuggestions"
+                android:scrollbars="vertical"/>
+
+            <Button
+                android:id="@+id/importBtn"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_btn_accent"
+                android:textColor="#0A0D12"
+                android:text="@string/import_btn"
                 android:textStyle="bold"
                 android:letterSpacing="0.1"
                 android:stateListAnimator="@null"/>
@@ -214,7 +277,7 @@
                 android:stateListAnimator="@null"/>
         </LinearLayout>
 
-        <!-- Total + Packets header -->
+        <!-- Total + Packets -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -244,7 +307,6 @@
                 android:letterSpacing="0.2"/>
         </LinearLayout>
 
-        <!-- RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler"
             android:layout_width="match_parent"

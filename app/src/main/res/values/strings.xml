@@ -12,4 +12,9 @@
     <string name="float_off">FLOATING: OFF</string>
     <string name="key_label">KEY</string>
     <string name="iv_label">IV</string>
+
+    <string name="import_title">IMPORT FROM MAJOR LOGIN</string>
+    <string name="import_hint">الصق hex الـ response هنا…</string>
+    <string name="import_btn">EXTRACT &amp; APPLY</string>
+    <string name="import_clear">CLEAR</string>
 </resources>
