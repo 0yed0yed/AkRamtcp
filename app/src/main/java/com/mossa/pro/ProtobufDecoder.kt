@@ -25,12 +25,12 @@ object ProtobufDecoder {
             val wireType = (tag and 0x7).toInt()
 
             when (wireType) {
-                0 -> {  // varint
+                0 -> {
                     val (value, np) = readVarint(data, pos)
                     pos = np
                     result[fieldNum] = value
                 }
-                1 -> {  // 64-bit
+                1 -> {
                     if (pos + 8 > end) break
                     var v = 0L
                     for (i in 0 until 8) {
@@ -39,7 +39,7 @@ object ProtobufDecoder {
                     pos += 8
                     result[fieldNum] = v
                 }
-                2 -> {  // length-delimited
+                2 -> {
                     val (len, np) = readVarint(data, pos)
                     pos = np
                     val lenInt = len.toInt()
@@ -47,11 +47,10 @@ object ProtobufDecoder {
                     val bytes = data.copyOfRange(pos, pos + lenInt)
                     pos += lenInt
 
-                    // حاول نفكها كـ message متداخلة، لو فشلت خزّنها كنص/bytes
                     val nested = tryNested(bytes)
                     result[fieldNum] = nested ?: bytesToHex(bytes)
                 }
-                5 -> {  // 32-bit
+                5 -> {
                     if (pos + 4 > end) break
                     var v = 0
                     for (i in 0 until 4) {
@@ -60,14 +59,13 @@ object ProtobufDecoder {
                     pos += 4
                     result[fieldNum] = v
                 }
-                else -> break  // unsupported
+                else -> break
             }
         }
         return result
     }
 
     private fun tryNested(bytes: ByteArray): Map<Int, Any>? {
-        // لو أول بايت مش tag صالح، مش message
         if (bytes.isEmpty()) return null
         return try {
             val nested = parseMessage(bytes, 0, bytes.size)
@@ -113,15 +111,17 @@ object ProtobufDecoder {
         val sb = StringBuilder()
         sb.append("{\n")
         val spaces = "    ".repeat(indent + 1)
-        data.forEach { (k, v) ->
+        data.forEach { entry ->
+            val k = entry.key
+            val v = entry.value
             sb.append(spaces).append(k).append(": ")
-            when (v) {
-                is Map<*, * -> {
-                    @Suppress("UNCHECKED_CAST")
-                    sb.append(format(v as Map<Int, Any>, indent + 1))
-                }
-                is String -> sb.append("\"").append(v).append("\"")
-                else -> sb.append(v.toString())
+            if (v is Map<*, *>) {
+                @Suppress("UNCHECKED_CAST")
+                sb.append(format(v as Map<Int, Any>, indent + 1))
+            } else if (v is String) {
+                sb.append("\"").append(v).append("\"")
+            } else {
+                sb.append(v.toString())
             }
             sb.append(",\n")
         }
