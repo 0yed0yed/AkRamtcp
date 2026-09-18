@@ -37,6 +37,7 @@ class ProxyService : Service() {
     private var server: Socks5Server? = null
     private val starting = AtomicBoolean(false)
     private var wakeLock: PowerManager.WakeLock? = null
+    @Volatile private var lastStartTime = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -50,10 +51,21 @@ class ProxyService : Service() {
         val action = intent?.action
         Log.i(TAG, "🟢 onStartCommand: $action")
 
-        // ✅ لو STOP — نوقف فوراً بدون startForeground
+        // ✅ لو STOP — نتجاهله لو جاي بسرعة من START
         if (action == ACTION_STOP) {
+            val sinceStart = System.currentTimeMillis() - lastStartTime
+            if (sinceStart < 3000 && lastStartTime > 0) {
+                Log.w(TAG, "⚠️ STOP ignored — only ${sinceStart}ms after START (accidental)")
+                return START_STICKY
+            }
+            Log.i(TAG, "🔴 STOP accepted (${sinceStart}ms after START)")
             stopServer()
             return START_NOT_STICKY
+        }
+
+        // ✅ خزّن وقت START
+        if (action == ACTION_START) {
+            lastStartTime = System.currentTimeMillis()
         }
 
         // ✅ startForeground مرة واحدة بس
@@ -99,11 +111,6 @@ class ProxyService : Service() {
         else PendingIntent.FLAG_UPDATE_CURRENT
         val openPending = PendingIntent.getActivity(this, 0, openIntent, flags)
 
-        val stopIntent = Intent(this, ProxyService::class.java).apply {
-            action = ACTION_STOP
-        }
-        val stopPending = PendingIntent.getService(this, 1, stopIntent, flags)
-
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("AkRamtcp يعمل")
             .setContentText("Proxy: ${Config.PROXY_HOST}:${Config.PROXY_PORT}")
@@ -112,7 +119,6 @@ class ProxyService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentIntent(openPending)
-            .addAction(android.R.drawable.ic_media_pause, "STOP", stopPending)
             .build()
     }
 

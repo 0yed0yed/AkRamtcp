@@ -84,6 +84,7 @@ class FloatingWindowService : Service() {
 
         // ---- زر التبديل ----
         floatingView?.findViewById<View>(R.id.fToggle)?.setOnClickListener {
+            Log.i(TAG, "fToggle clicked — isRunning=${ProxyService.isRunning}")
             val intent = Intent(this, ProxyService::class.java)
             if (ProxyService.isRunning) {
                 intent.action = ProxyService.ACTION_STOP
