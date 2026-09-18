@@ -27,7 +27,9 @@ class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: PacketAdapter
-    private val packets = mutableListOf<PacketInfo>()
+    private val allPackets = mutableListOf<PacketInfo>()
+    private val shownPackets = mutableListOf<PacketInfo>()
+    private var showOnlyImportant = true    // ← الافتراضي: المهمين بس
     private var countdownTimer: CountDownTimer? = null
 
     private val notifPermission = registerForActivityResult(
@@ -66,7 +68,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // RecyclerView
-        adapter = PacketAdapter(packets) { packet ->
+        adapter = PacketAdapter(shownPackets) { packet ->
             val intent = Intent(this, PacketDetailActivity::class.java).apply {
                 putExtra(PacketDetailActivity.EXTRA_NUMBER, packet.number)
             }
@@ -78,12 +80,22 @@ class MainActivity : AppCompatActivity() {
         // Packet listener
         ProxyService.packetListener = { info ->
             runOnUiThread {
-                packets.add(0, info)
-                if (packets.size > 200) packets.removeAt(packets.size - 1)
+                allPackets.add(0, info)
+                if (allPackets.size > 500) allPackets.removeAt(allPackets.size - 1)
+
+                // فلتر
+                if (!showOnlyImportant || PacketTypes.isImportant(info.type)) {
+                    shownPackets.add(0, info)
+                    if (shownPackets.size > 200) shownPackets.removeAt(shownPackets.size - 1)
+                }
                 adapter.notifyDataSetChanged()
                 updatePacketCount()
             }
         }
+
+        // فلاتر
+        binding.filterImportant.setOnClickListener { setFilter(true) }
+        binding.filterAll.setOnClickListener { setFilter(false) }
 
         // User label
         binding.userLabel.text = AuthManager.currentUsername ?: "user"
@@ -267,10 +279,37 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ===== FILTER =====
+    private fun setFilter(important: Boolean) {
+        showOnlyImportant = important
+        shownPackets.clear()
+        if (important) {
+            shownPackets.addAll(allPackets.filter { PacketTypes.isImportant(it.type) })
+        } else {
+            shownPackets.addAll(allPackets)
+        }
+        adapter.notifyDataSetChanged()
+        updateFilterUi()
+    }
+
+    private fun updateFilterUi() {
+        if (showOnlyImportant) {
+            binding.filterImportant.background = getDrawable(R.drawable.bg_btn_accent)
+            binding.filterImportant.setTextColor(0xFF0A0D12.toInt())
+            binding.filterAll.background = getDrawable(R.drawable.bg_btn_outline)
+            binding.filterAll.setTextColor(0xFF94A3B8.toInt())
+        } else {
+            binding.filterImportant.background = getDrawable(R.drawable.bg_btn_outline)
+            binding.filterImportant.setTextColor(0xFF94A3B8.toInt())
+            binding.filterAll.background = getDrawable(R.drawable.bg_btn_accent)
+            binding.filterAll.setTextColor(0xFF0A0D12.toInt())
+        }
+    }
+
     // ===== PACKET COUNT =====
     private fun updatePacketCount() {
-        binding.homePacketCount.text = packets.size.toString()
-        binding.totalLabel.text = "PACKETS · ${packets.size}"
+        binding.homePacketCount.text = allPackets.size.toString()
+        binding.totalLabel.text = "PACKETS · ${shownPackets.size} / ${allPackets.size}"
     }
 
     // ===== KEYS =====

