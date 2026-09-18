@@ -44,6 +44,17 @@ class ProxyService : Service() {
         startForegroundNotification()
 
         server = Socks5Server(Config.PROXY_PORT) { info ->
+            // سجّل الباكيت في الذاكرة
+            PacketRegistry.put(info)
+
+            // احفظه في ملف تلقائي
+            try {
+                PacketStore.save(applicationContext, info)
+            } catch (e: Exception) {
+                Log.e(TAG, "save failed: ${e.message}")
+            }
+
+            // ابعت للـ UI
             packetListener?.invoke(info)
         }
         server?.start()

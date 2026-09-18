@@ -7,9 +7,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.mossa.pro.databinding.ActivityMainBinding
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,13 +20,14 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         adapter = PacketAdapter(packets) { packet ->
-            // على الضغط: عرض تفاصيل
-            Toast.makeText(this, "#${packet.number} ${packet.type} (${packet.hex.length/2}B)", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, PacketDetailActivity::class.java).apply {
+                putExtra(PacketDetailActivity.EXTRA_NUMBER, packet.number)
+            }
+            startActivity(intent)
         }
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
 
-        // استقبل الباكيتات من الـ service
         ProxyService.packetListener = { info ->
             runOnUiThread {
                 packets.add(0, info)
@@ -84,7 +82,6 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "KEY & IV لازم 16 بايت", Toast.LENGTH_LONG).show()
                 return
             }
-            // ملاحظة: مش بنغير المفتاح جوه الـ service من هنا حالياً
             Toast.makeText(this, "✓ Keys applied", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this, "خطأ: ${e.message}", Toast.LENGTH_LONG).show()

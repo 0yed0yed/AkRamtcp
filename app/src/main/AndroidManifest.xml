@@ -26,6 +26,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".PacketDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"/>
+
         <service
             android:name=".ProxyService"
             android:exported="false"
