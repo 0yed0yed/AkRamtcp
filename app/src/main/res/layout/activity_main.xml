@@ -393,11 +393,12 @@
                     android:padding="16dp"
                     android:layout_marginTop="12dp">
 
+                    <!-- الحساب -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="⏱ الوقت المتبقي"
-                        android:textColor="@color/accent"
+                        android:text="📅 انتهاء الحساب"
+                        android:textColor="@color/success"
                         android:textStyle="bold"
                         android:textSize="12sp"
                         android:letterSpacing="0.1"/>
@@ -407,10 +408,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textColor="@color/text_bright"
-                        android:textSize="28sp"
+                        android:textColor="@color/success"
+                        android:textSize="26sp"
                         android:textStyle="bold"
-                        android:paddingTop="8dp"/>
+                        android:paddingTop="6dp"/>
 
                     <TextView
                         android:id="@+id/accountExpiryDate"
@@ -420,6 +421,42 @@
                         android:textColor="@color/text_dim"
                         android:textSize="11sp"
                         android:paddingTop="4dp"/>
+
+                    <!-- فاصل -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/border"
+                        android:layout_marginTop="14dp"
+                        android:layout_marginBottom="14dp"/>
+
+                    <!-- التوكن -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔑 انتهاء الجلسة (Token)"
+                        android:textColor="@color/accent"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.1"/>
+
+                    <TextView
+                        android:id="@+id/tokenTimeLeft"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textColor="@color/accent"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:paddingTop="6dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="يتجدد تلقائياً"
+                        android:textColor="@color/text_dim"
+                        android:textSize="10sp"
+                        android:paddingTop="2dp"/>
                 </LinearLayout>
 
                 <!-- Device -->

@@ -352,54 +352,87 @@ class MainActivity : AppCompatActivity() {
     private fun loadAccountInfo() {
         binding.accountUsername.text = AuthManager.currentUsername ?: "--"
 
-        // Device
         val devModel = DeviceId.model()
         val devId = DeviceId.get(this)
         binding.accountDevice.text = devModel
         binding.accountDeviceId.text = devId.take(32) + "..."
 
-        // Expiry
-        val exp = SecurePrefs.getLong(AuthConfig.PREF_TOKEN_EXP, 0L)
-        updateExpiryDisplay(exp)
+        val accExp = AuthManager.getAccountExpiry()
+        val tokenExp = AuthManager.getTokenExpiry()
+        startCountdowns(accExp, tokenExp)
     }
 
-    private fun updateExpiryDisplay(expSec: Long) {
+    private fun startCountdowns(accountExp: Long, tokenExp: Long) {
         countdownTimer?.cancel()
-        if (expSec <= 0) {
-            binding.accountTimeLeft.text = "--"
+
+        if (accountExp > 0) {
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+            binding.accountExpiryDate.text = "ينتهي في: " + sdf.format(Date(accountExp * 1000))
+        } else {
             binding.accountExpiryDate.text = "ينتهي في: --"
-            return
         }
 
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
-        binding.accountExpiryDate.text = "ينتهي في: " + sdf.format(Date(expSec * 1000))
-
-        val now = System.currentTimeMillis() / 1000
-        val left = expSec - now
-        if (left <= 0) {
-            binding.accountTimeLeft.text = "انتهى"
-            binding.accountStatus.text = "EXPIRED"
-            binding.accountStatus.setTextColor(0xFFFBBF24.toInt())
-            return
-        }
-
-        countdownTimer = object : CountDownTimer(left * 1000, 1000) {
+        countdownTimer = object : CountDownTimer(Long.MAX_VALUE, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                val s = millisUntilFinished / 1000
-                val h = s / 3600
-                val m = (s % 3600) / 60
-                val sec = s % 60
-                binding.accountTimeLeft.text = String.format(
-                    Locale.US, "%02d:%02d:%02d", h, m, sec
-                )
-            }
-            override fun onFinish() {
-                binding.accountTimeLeft.text = "انتهى"
-            }
-        }.start()
+                val nowSec = System.currentTimeMillis() / 1000
 
-        binding.accountStatus.text = "ACTIVE"
-        binding.accountStatus.setTextColor(0xFF4ADE80.toInt())
+                if (accountExp > 0) {
+                    val left = accountExp - nowSec
+                    if (left <= 0) {
+                        binding.accountTimeLeft.text = "انتهى"
+                        binding.accountTimeLeft.setTextColor(0xFFF87171.toInt())
+                        binding.accountStatus.text = "EXPIRED"
+                        binding.accountStatus.setTextColor(0xFFFBBF24.toInt())
+                    } else {
+                        binding.accountTimeLeft.text = formatDuration(left)
+                        binding.accountTimeLeft.setTextColor(0xFF4ADE80.toInt())
+                        binding.accountStatus.text = "ACTIVE"
+                        binding.accountStatus.setTextColor(0xFF4ADE80.toInt())
+                    }
+                } else {
+                    binding.accountTimeLeft.text = "دائم"
+                    binding.accountTimeLeft.setTextColor(0xFF4ADE80.toInt())
+                    binding.accountStatus.text = "ACTIVE"
+                    binding.accountStatus.setTextColor(0xFF4ADE80.toInt())
+                }
+
+                if (tokenExp > 0) {
+                    val tLeft = tokenExp - nowSec
+                    if (tLeft <= 0) {
+                        binding.tokenTimeLeft.text = "جاري التجديد..."
+                        binding.tokenTimeLeft.setTextColor(0xFFFBBF24.toInt())
+                    } else {
+                        binding.tokenTimeLeft.text = formatDurationShort(tLeft)
+                        binding.tokenTimeLeft.setTextColor(0xFFFBBF24.toInt())
+                    }
+                } else {
+                    binding.tokenTimeLeft.text = "--"
+                }
+            }
+
+            override fun onFinish() {}
+        }.start()
+    }
+
+    private fun formatDuration(sec: Long): String {
+        if (sec <= 0) return "انتهى"
+        val days = sec / 86400
+        val hours = (sec % 86400) / 3600
+        val minutes = (sec % 3600) / 60
+        val seconds = sec % 60
+        return when {
+            days > 0 -> String.format(Locale.US, "%d يوم · %02d:%02d:%02d", days, hours, minutes, seconds)
+            hours > 0 -> String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
+            else -> String.format(Locale.US, "%02d:%02d", minutes, seconds)
+        }
+    }
+
+    private fun formatDurationShort(sec: Long): String {
+        if (sec <= 0) return "00:00"
+        val hours = sec / 3600
+        val minutes = (sec % 3600) / 60
+        val seconds = sec % 60
+        return String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
     }
 
     // ===== LOGOUT =====
