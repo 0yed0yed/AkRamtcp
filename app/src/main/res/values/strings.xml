@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AkRamtcp</string>
-    <string name="start">▶ START</string>
-    <string name="stop">■ STOP</string>
+    <string name="subtitle">TCP Sniffer · SOCKS5 · AES</string>
+    <string name="start">START</string>
+    <string name="stop">STOP</string>
     <string name="status_idle">READY</string>
     <string name="status_running">RUNNING</string>
     <string name="apply_keys">APPLY</string>
-    <string name="total">TOTAL: 0</string>
+    <string name="total_prefix">TOTAL</string>
+    <string name="float_on">FLOATING: ON</string>
+    <string name="float_off">FLOATING: OFF</string>
+    <string name="key_label">KEY</string>
+    <string name="iv_label">IV</string>
 </resources>

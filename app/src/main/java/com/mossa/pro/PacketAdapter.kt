@@ -13,6 +13,7 @@ class PacketAdapter(
 ) : RecyclerView.Adapter<PacketAdapter.VH>() {
 
     class VH(v: View) : RecyclerView.ViewHolder(v) {
+        val colorBar: View = v.findViewById(R.id.colorBar)
         val number: TextView = v.findViewById(R.id.tvNumber)
         val type: TextView = v.findViewById(R.id.tvType)
         val direction: TextView = v.findViewById(R.id.tvDirection)
@@ -28,13 +29,15 @@ class PacketAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val p = items[position]
         holder.number.text = "#${p.number}"
-        holder.type.text = "${p.type} (${PacketTypes.name(p.type)})"
+        holder.type.text = "${p.type} · ${PacketTypes.name(p.type)}"
         holder.direction.text = p.direction
         holder.time.text = p.datetime.takeLast(8)
-        holder.size.text = "${p.hex.length / 2}B"
+        holder.size.text = "${p.hex.length / 2} B"
 
         try {
-            holder.type.setTextColor(Color.parseColor(PacketTypes.color(p.type)))
+            val c = Color.parseColor(PacketTypes.color(p.type))
+            holder.type.setTextColor(c)
+            holder.colorBar.setBackgroundColor(c)
         } catch (_: Exception) {}
 
         holder.itemView.setOnClickListener { onClick(p) }

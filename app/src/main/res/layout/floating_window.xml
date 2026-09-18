@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/floatRoot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_float_container"
+        android:padding="8dp"
+        android:gravity="center">
+
+        <!-- Top: dot + close -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <View
+                android:id="@+id/fDot"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:background="@color/text_dim"/>
+
+            <TextView
+                android:id="@+id/fTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="AkRam"
+                android:textColor="@color/text_bright"
+                android:textSize="10sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/fClose"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:gravity="center"
+                android:text="✕"
+                android:textColor="@color/danger"
+                android:textSize="12sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <!-- Counter -->
+        <TextView
+            android:id="@+id/fCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="0"
+            android:textColor="@color/primary"
+            android:textSize="20sp"
+            android:textStyle="bold"/>
+
+        <!-- Last packet -->
+        <TextView
+            android:id="@+id/fLast"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="—"
+            android:textColor="@color/accent"
+            android:textSize="9sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:gravity="center"/>
+
+    </LinearLayout>
+</FrameLayout>

@@ -1,166 +1,257 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:fillViewport="true">
 
-    <!-- Header -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="AkRamtcp"
-        android:textColor="@color/primary"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:paddingBottom="4dp"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="SOCKS5 TCP Sniffer + AES Decoder"
-        android:textColor="@color/text"
-        android:textSize="12sp"
-        android:gravity="center"
-        android:paddingBottom="12dp"/>
-
-    <!-- Status + buttons -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="@color/surface"
-        android:padding="10dp">
-
-        <TextView
-            android:id="@+id/statusLabel"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/status_idle"
-            android:textColor="@color/text"
-            android:textStyle="bold"
-            android:textSize="14sp"/>
-
-        <Button
-            android:id="@+id/startBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:backgroundTint="@color/success"
-            android:textColor="@color/text_bright"
-            android:text="@string/start"/>
-
-        <Button
-            android:id="@+id/stopBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:backgroundTint="@color/danger"
-            android:textColor="@color/text_bright"
-            android:text="@string/stop"
-            android:enabled="false"/>
-    </LinearLayout>
-
-    <!-- Keys -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@color/surface"
-        android:padding="10dp"
-        android:layout_marginTop="8dp">
+        android:padding="14dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ENCRYPTION KEY / IV"
-            android:textColor="@color/accent"
-            android:textStyle="bold"
-            android:textSize="12sp"/>
-
+        <!-- Header Card -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="6dp">
+            android:orientation="vertical"
+            android:background="@drawable/bg_header_gradient"
+            android:padding="18dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="KEY:"
-                android:textColor="@color/text"
-                android:paddingEnd="6dp"/>
-
-            <EditText
-                android:id="@+id/keyInput"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@color/bg"
-                android:padding="8dp"
-                android:textColor="@color/text"
-                android:textSize="11sp"
-                android:inputType="text"
-                android:maxLines="1"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="6dp">
+                android:text="@string/app_name"
+                android:textColor="@color/primary"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="IV: "
+                android:text="@string/subtitle"
                 android:textColor="@color/text"
-                android:paddingEnd="12dp"/>
+                android:textSize="11sp"
+                android:paddingTop="4dp"
+                android:letterSpacing="0.08"/>
 
-            <EditText
-                android:id="@+id/ivInput"
+            <!-- status pill -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@drawable/bg_status_pill"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:layout_marginTop="14dp"
+                android:gravity="center_vertical">
+
+                <View
+                    android:id="@+id/statusDot"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:background="@color/text_dim"/>
+
+                <TextView
+                    android:id="@+id/statusLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/status_idle"
+                    android:textColor="@color/text_bright"
+                    android:textStyle="bold"
+                    android:textSize="12sp"
+                    android:letterSpacing="0.1"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Controls Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="14dp"
+            android:layout_marginTop="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/startBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_btn_success"
+                    android:textColor="#0A0D12"
+                    android:text="@string/start"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1"
+                    android:stateListAnimator="@null"/>
+
+                <Button
+                    android:id="@+id/stopBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_btn_danger"
+                    android:textColor="#0A0D12"
+                    android:text="@string/stop"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1"
+                    android:enabled="false"
+                    android:stateListAnimator="@null"/>
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/floatBtn"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_btn_primary"
+                android:textColor="#0A0D12"
+                android:text="@string/float_off"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:stateListAnimator="@null"/>
+        </LinearLayout>
+
+        <!-- Keys Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="14dp"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ENCRYPTION"
+                android:textColor="@color/accent"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:letterSpacing="0.15"
+                android:paddingBottom="10dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/key_label"
+                    android:textColor="@color/text"
+                    android:textSize="12sp"
+                    android:textStyle="bold"/>
+
+                <EditText
+                    android:id="@+id/keyInput"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_input"
+                    android:paddingHorizontal="12dp"
+                    android:textColor="@color/text_bright"
+                    android:textSize="11sp"
+                    android:hint="16 bytes"
+                    android:textColorHint="@color/text_dim"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:fontFamily="monospace"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/iv_label"
+                    android:textColor="@color/text"
+                    android:textSize="12sp"
+                    android:textStyle="bold"/>
+
+                <EditText
+                    android:id="@+id/ivInput"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_input"
+                    android:paddingHorizontal="12dp"
+                    android:textColor="@color/text_bright"
+                    android:textSize="11sp"
+                    android:hint="16 bytes"
+                    android:textColorHint="@color/text_dim"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:fontFamily="monospace"/>
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/applyKeys"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_btn_accent"
+                android:textColor="#0A0D12"
+                android:text="@string/apply_keys"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:stateListAnimator="@null"/>
+        </LinearLayout>
+
+        <!-- Total + Packets header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="18dp"
+            android:paddingBottom="10dp">
+
+            <TextView
+                android:id="@+id/totalLabel"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@color/bg"
-                android:padding="8dp"
-                android:textColor="@color/text"
+                android:text="TOTAL · 0"
+                android:textColor="@color/text_bright"
+                android:textStyle="bold"
+                android:textSize="15sp"
+                android:letterSpacing="0.05"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LIVE"
+                android:textColor="@color/success"
+                android:textStyle="bold"
                 android:textSize="11sp"
-                android:inputType="text"
-                android:maxLines="1"/>
+                android:letterSpacing="0.2"/>
         </LinearLayout>
 
-        <Button
-            android:id="@+id/applyKeys"
-            android:layout_width="wrap_content"
+        <!-- RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:backgroundTint="@color/primary"
-            android:textColor="@color/bg"
-            android:textStyle="bold"
-            android:text="@string/apply_keys"/>
+            android:minHeight="300dp"
+            android:background="@android:color/transparent"
+            android:overScrollMode="never"/>
+
     </LinearLayout>
-
-    <!-- Total -->
-    <TextView
-        android:id="@+id/totalLabel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/total"
-        android:textColor="@color/accent"
-        android:textStyle="bold"
-        android:paddingTop="10dp"
-        android:paddingBottom="6dp"
-        android:textSize="14sp"/>
-
-    <!-- Packet list -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@color/bg"/>
-
-</LinearLayout>
+</ScrollView>

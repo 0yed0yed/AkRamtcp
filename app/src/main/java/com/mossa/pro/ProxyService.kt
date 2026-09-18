@@ -44,17 +44,19 @@ class ProxyService : Service() {
         startForegroundNotification()
 
         server = Socks5Server(Config.PROXY_PORT) { info ->
-            // سجّل الباكيت في الذاكرة
+            // فلتر: بس الباكيتات المعروفة
+            if (!PacketTypes.NAMES.containsKey(info.type)) {
+                return@Socks5Server
+            }
+
             PacketRegistry.put(info)
 
-            // احفظه في ملف تلقائي
             try {
                 PacketStore.save(applicationContext, info)
             } catch (e: Exception) {
                 Log.e(TAG, "save failed: ${e.message}")
             }
 
-            // ابعت للـ UI
             packetListener?.invoke(info)
         }
         server?.start()
@@ -81,7 +83,7 @@ class ProxyService : Service() {
         }
         val notif: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("AkRamtcp")
-            .setContentText("SOCKS5 server running on port ${Config.PROXY_PORT}")
+            .setContentText("Sniffer running · port ${Config.PROXY_PORT}")
             .setSmallIcon(android.R.drawable.ic_menu_compass)
             .setOngoing(true)
             .build()
