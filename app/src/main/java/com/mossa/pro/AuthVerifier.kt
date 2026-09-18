@@ -27,9 +27,7 @@ object AuthVerifier {
         scope = CoroutineScope(Dispatchers.IO)
 
         job = scope?.launch {
-            // ننتظر 30 ثانية قبل ما نبدأ، عشان الـ login يستقر
-            delay(30_000)
-
+            delay(30_000)   // 30 ثانية قبل أول verify
             val deviceId = DeviceId.get(appContext)
 
             while (isActive && running) {
@@ -43,23 +41,18 @@ object AuthVerifier {
                     val result = ApiClient.verify(token, deviceId)
 
                     when {
-                        result.ok -> {
-                            Log.i(TAG, "✓ verified")
-                        }
+                        result.ok -> Log.i(TAG, "✓ verified")
                         result.errorCode == 401 -> {
-                            Log.w(TAG, "401 — user deleted or token invalid")
-                            invokeRevoked("الحساب اتحذف أو التوكن انتهى")
+                            Log.w(TAG, "401 — account gone")
+                            invokeRevoked()
                             break
                         }
                         result.errorCode == 403 -> {
-                            Log.w(TAG, "403 — revoked: ${result.error}")
-                            invokeRevoked(result.error ?: "الحساب موقوف")
+                            Log.w(TAG, "403 — revoked")
+                            invokeRevoked()
                             break
                         }
-                        else -> {
-                            // network error — نتجاهل ونستنى
-                            Log.w(TAG, "network err: ${result.error}")
-                        }
+                        else -> Log.w(TAG, "network: ${result.error}")
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "loop: ${e.message}")
@@ -70,7 +63,7 @@ object AuthVerifier {
         }
     }
 
-    private suspend fun invokeRevoked(msg: String) {
+    private suspend fun invokeRevoked() {
         kotlinx.coroutines.withContext(Dispatchers.Main) {
             onRevoked?.invoke()
         }

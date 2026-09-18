@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun forceLogout() {
         AuthVerifier.stop()
-        AuthManager.logout()
+        AuthManager.logoutComplete()
         goToLogin()
     }
 

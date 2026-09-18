@@ -21,19 +21,37 @@ class LoginActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         AuthManager.init(this)
-        Log.i(TAG, "onCreate: isLoggedIn=${AuthManager.isLoggedIn()}")
+        Log.i(TAG, "onCreate")
 
-        if (AuthManager.isLoggedIn()) {
-            Log.i(TAG, "already logged in → goToMain")
-            goToMain()
+        // ===== AUTO-LOGIN =====
+        val savedUser = SecurePrefs.getString("saved_user")
+        val savedPass = SecurePrefs.getString("saved_pass")
+
+        if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty()) {
+            Log.i(TAG, "auto-login attempt: $savedUser")
+            performAutoLogin(savedUser, savedPass)
             return
         }
 
+        // ===== شاشة login عادية =====
+        setupUi()
+    }
+
+    private fun setupUi() {
         AuthManager.currentUsername?.let {
             binding.usernameInput.setText(it)
         }
 
-        binding.loginBtn.setOnClickListener { doLogin() }
+        binding.loginBtn.setOnClickListener {
+            val u = binding.usernameInput.text.toString().trim()
+            val p = binding.passwordInput.text.toString().trim()
+            if (u.isEmpty() || p.isEmpty()) {
+                showError("اكتب Username و Password")
+                return@setOnClickListener
+            }
+            doLogin(u, p, rememberMe = true)
+        }
+
         binding.clearBtn.setOnClickListener {
             binding.usernameInput.setText("")
             binding.passwordInput.setText("")
@@ -41,41 +59,61 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun doLogin() {
-        val username = binding.usernameInput.text.toString().trim()
-        val password = binding.passwordInput.text.toString().trim()
+    private fun performAutoLogin(username: String, password: String) {
+        setLoading(true)
+        binding.errorText.visibility = View.GONE
+        binding.usernameInput.setText(username)
 
-        if (username.isEmpty() || password.isEmpty()) {
-            showError("اكتب Username و Password")
-            return
+        val deviceId = DeviceId.get(this)
+        val deviceModel = DeviceId.model()
+
+        lifecycleScope.launch {
+            val result = ApiClient.login(username, password, deviceId, deviceModel)
+            setLoading(false)
+
+            if (result.ok && result.token != null) {
+                // نجح → ادخل
+                AuthManager.saveSession(username, result.token, result.expiresIn)
+                Toast.makeText(this@LoginActivity, "✓ مرحباً $username", Toast.LENGTH_SHORT).show()
+                goToMain()
+            } else {
+                // فشل → اعرض السبب وامسح الـ creds
+                Log.w(TAG, "auto-login failed: ${result.error}")
+                SecurePrefs.remove("saved_user")
+                SecurePrefs.remove("saved_pass")
+
+                val msg = when {
+                    result.error?.contains("منتهي") == true -> "الحساب انتهى"
+                    result.error?.contains("موقوف") == true -> "الحساب موقوف"
+                    result.error?.contains("جهاز") == true -> "الحساب مربوط بجهاز تاني"
+                    result.error?.contains("صحيحة") == true -> "بيانات الدخول غلط"
+                    else -> result.error ?: "فشل تسجيل الدخول التلقائي"
+                }
+                showError(msg)
+                setupUi()
+            }
         }
+    }
 
+    private fun doLogin(username: String, password: String, rememberMe: Boolean) {
         setLoading(true)
         binding.errorText.visibility = View.GONE
 
         val deviceId = DeviceId.get(this)
         val deviceModel = DeviceId.model()
 
-        Log.i(TAG, "login: $username / device=$deviceModel")
-
         lifecycleScope.launch {
             val result = ApiClient.login(username, password, deviceId, deviceModel)
             setLoading(false)
 
-            Log.i(TAG, "login result: ok=${result.ok} err=${result.error}")
-
             if (result.ok && result.token != null) {
                 AuthManager.saveSession(username, result.token, result.expiresIn)
 
-                // ✅ تحقق إن الحفظ نجح
-                val checkToken = SecurePrefs.getString(AuthConfig.PREF_TOKEN)
-                val checkUser = SecurePrefs.getString(AuthConfig.PREF_USERNAME)
-                Log.i(TAG, "after save: user=$checkUser token=${checkToken?.take(20)}")
-
-                if (checkToken.isNullOrEmpty()) {
-                    Log.e(TAG, "✗ SAVE FAILED — token not persisted!")
-                    showError("مشكلة في الحفظ — جرب تاني")
-                    return@launch
+                // ===== احفظ الـ creds للـ auto-login =====
+                if (rememberMe) {
+                    SecurePrefs.putString("saved_user", username)
+                    SecurePrefs.putString("saved_pass", password)
+                    Log.i(TAG, "creds saved for auto-login")
                 }
 
                 Toast.makeText(this@LoginActivity, "✓ مرحباً $username", Toast.LENGTH_SHORT).show()
@@ -99,7 +137,6 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun goToMain() {
-        Log.i(TAG, "goToMain()")
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
