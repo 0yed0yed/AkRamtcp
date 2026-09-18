@@ -1,6 +1,7 @@
 package com.mossa.pro
 
 import android.content.Intent
+import android.util.Log
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -35,10 +36,13 @@ class MainActivity : AppCompatActivity() {
 
         // 1. تأكد من الـ auth
         AuthManager.init(this)
+        Log.i("MainActivity", "onCreate: isLoggedIn=${AuthManager.isLoggedIn()} user=${AuthManager.currentUsername}")
         if (!AuthManager.isLoggedIn()) {
+            Log.w("MainActivity", "not logged in — goToLogin")
             goToLogin()
             return
         }
+        Log.i("MainActivity", "auth OK — showing UI")
 
         // 2. Anti-tamper check
         AntiTamper.check(this)?.let { err ->
