@@ -17,9 +17,19 @@ jobs:
           distribution: 'temurin'
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Build Debug APK
+      - name: Build Release APK (obfuscated)
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AkRamtcp-release
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+      - name: Upload Debug APK (fallback)
+        if: failure()
         run: ./gradlew assembleDebug --no-daemon
-      - name: Upload APK
+      - name: Upload Debug APK
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: AkRamtcp-debug
