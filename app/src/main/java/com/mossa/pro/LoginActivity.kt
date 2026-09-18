@@ -73,7 +73,7 @@ class LoginActivity : AppCompatActivity() {
 
             if (result.ok && result.token != null) {
                 // نجح → ادخل
-                AuthManager.saveSession(username, result.token, result.expiresIn)
+                AuthManager.saveSession(username, result.token, result.expiresIn, result.accountExpiresAt)
                 Toast.makeText(this@LoginActivity, "✓ مرحباً $username", Toast.LENGTH_SHORT).show()
                 goToHex()
             } else {
@@ -107,7 +107,7 @@ class LoginActivity : AppCompatActivity() {
             setLoading(false)
 
             if (result.ok && result.token != null) {
-                AuthManager.saveSession(username, result.token, result.expiresIn)
+                AuthManager.saveSession(username, result.token, result.expiresIn, result.accountExpiresAt)
 
                 // ===== احفظ الـ creds للـ auto-login =====
                 if (rememberMe) {

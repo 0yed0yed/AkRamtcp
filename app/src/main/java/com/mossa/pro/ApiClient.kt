@@ -26,7 +26,8 @@ object ApiClient {
         val ok: Boolean,
         val token: String?,
         val expiresIn: Long,
-        val error: String?
+        val error: String?,
+        val accountExpiresAt: Long = 0L
     )
 
     data class VerifyResult(
@@ -52,11 +53,14 @@ object ApiClient {
                 val text = resp.body?.string() ?: ""
                 if (resp.isSuccessful) {
                     val obj = gson.fromJson(text, JsonObject::class.java)
+                    val userObj = obj.getAsJsonObject("user")
+                    val accountExp = userObj?.get("expires_at")?.asLong ?: 0L
                     LoginResult(
                         ok = true,
                         token = obj.get("token")?.asString,
                         expiresIn = obj.get("expires_in")?.asLong ?: 3600L,
-                        error = null
+                        error = null,
+                        accountExpiresAt = accountExp
                     )
                 } else {
                     val err = try { gson.fromJson(text, JsonObject::class.java).get("detail")?.asString } catch (e: Exception) { null }

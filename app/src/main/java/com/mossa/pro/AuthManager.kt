@@ -13,27 +13,34 @@ object AuthManager {
         SecurePrefs.init(context)
         currentUsername = SecurePrefs.getString(AuthConfig.PREF_USERNAME)
         currentToken = SecurePrefs.getString(AuthConfig.PREF_TOKEN)
-        Log.i(TAG, "init: user=$currentUsername")
     }
 
     fun isLoggedIn(): Boolean {
         val t = currentToken
-        if (t.isNullOrEmpty()) {
-            Log.w(TAG, "isLoggedIn=false")
-            return false
-        }
-        return true
+        return !t.isNullOrEmpty()
     }
 
-    fun saveSession(username: String, token: String, expiresInSec: Long) {
+    fun saveSession(username: String, token: String, expiresInSec: Long, accountExpiresAt: Long = 0L) {
         currentUsername = username
         currentToken = token
-        val exp = (System.currentTimeMillis() / 1000) + expiresInSec
 
+        val tokenExp = (System.currentTimeMillis() / 1000) + expiresInSec
         SecurePrefs.putString(AuthConfig.PREF_USERNAME, username)
         SecurePrefs.putString(AuthConfig.PREF_TOKEN, token)
-        SecurePrefs.putLong(AuthConfig.PREF_TOKEN_EXP, exp)
+        SecurePrefs.putLong(AuthConfig.PREF_TOKEN_EXP, tokenExp)
         SecurePrefs.putLong(AuthConfig.PREF_LAST_VERIFY, System.currentTimeMillis() / 1000)
+
+        if (accountExpiresAt > 0) {
+            SecurePrefs.putLong("account_expires_at", accountExpiresAt)
+        }
+    }
+
+    fun getAccountExpiry(): Long {
+        return SecurePrefs.getLong("account_expires_at", 0L)
+    }
+
+    fun getTokenExpiry(): Long {
+        return SecurePrefs.getLong(AuthConfig.PREF_TOKEN_EXP, 0L)
     }
 
     fun updateToken(token: String, expiresInSec: Long) {
@@ -47,26 +54,18 @@ object AuthManager {
         SecurePrefs.putLong(AuthConfig.PREF_LAST_VERIFY, System.currentTimeMillis() / 1000)
     }
 
-    /**
-     * يمسح التوكن الحالي — لكن **بيحفظ** الـ creds للـ auto-login
-     */
     fun logout() {
-        Log.i(TAG, "logout() — keeping saved creds for auto-login")
         currentUsername = null
         currentToken = null
         SecurePrefs.remove(AuthConfig.PREF_TOKEN)
         SecurePrefs.remove(AuthConfig.PREF_TOKEN_EXP)
         SecurePrefs.remove(AuthConfig.PREF_USERNAME)
-        // ↑ متشيلش "saved_user" و "saved_pass"
     }
 
-    /**
-     * يمسح كل حاجة — logout نهائي (المستخدم اختار)
-     */
     fun logoutComplete() {
-        Log.i(TAG, "logoutComplete() — removing all")
         logout()
         SecurePrefs.remove("saved_user")
         SecurePrefs.remove("saved_pass")
+        SecurePrefs.remove("account_expires_at")
     }
 }
