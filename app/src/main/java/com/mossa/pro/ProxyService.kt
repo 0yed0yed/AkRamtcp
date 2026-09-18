@@ -19,7 +19,7 @@ class ProxyService : Service() {
         const val TAG = "AkRamtcp"
         const val ACTION_START = "com.mossa.pro.START"
         const val ACTION_STOP = "com.mossa.pro.STOP"
-        const val CHANNEL_ID = "akramtcp_foreground"
+        const val CHANNEL_ID = "akramtcp_fg"
         const val NOTIF_ID = 1001
 
         @Volatile var isRunning = false
@@ -42,23 +42,27 @@ class ProxyService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.i(TAG, "onCreate")
-        // ✅ ضمان: channel + notification قبل أي حاجة
+        Log.i(TAG, "🔵 ProxyService onCreate")
         createChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.i(TAG, "onStartCommand: action=${intent?.action}")
+        Log.i(TAG, "🟢 onStartCommand: ${intent?.action}")
+
+        // ✅ IMPORTANT: startForeground أول سطر
+        try {
+            startForeground(NOTIF_ID, buildNotification())
+            Log.i(TAG, "✅ startForeground OK")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ startForeground FAILED: ${e.message}")
+        }
+
         when (intent?.action) {
-            ACTION_START -> {
-                // ✅ لازم startForeground أول حاجة
-                startForeground(NOTIF_ID, buildNotification())
-                startServer()
+            ACTION_STOP -> {
+                stopServer()
+                return START_NOT_STICKY
             }
-            ACTION_STOP -> stopServer()
             else -> {
-                // لو اتشغل من غير action (boot/watchdog) → default = start
-                startForeground(NOTIF_ID, buildNotification())
                 startServer()
             }
         }
@@ -71,16 +75,14 @@ class ProxyService : Service() {
             if (mgr.getNotificationChannel(CHANNEL_ID) == null) {
                 val chan = NotificationChannel(
                     CHANNEL_ID,
-                    "AkRamtcp Foreground",
-                    NotificationManager.IMPORTANCE_LOW
+                    "AkRamtcp Service",
+                    NotificationManager.IMPORTANCE_MIN
                 ).apply {
-                    description = "Sniffer service"
                     setShowBadge(false)
                     enableVibration(false)
                     setSound(null, null)
                 }
                 mgr.createNotificationChannel(chan)
-                Log.i(TAG, "channel created")
             }
         }
     }
@@ -101,10 +103,10 @@ class ProxyService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("AkRamtcp يعمل")
-            .setContentText("Sniffer · port ${Config.PROXY_PORT}")
+            .setContentText("Proxy: ${Config.PROXY_HOST}:${Config.PROXY_PORT}")
             .setSmallIcon(android.R.drawable.ic_menu_compass)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentIntent(openPending)
             .addAction(android.R.drawable.ic_media_pause, "STOP", stopPending)
@@ -112,17 +114,11 @@ class ProxyService : Service() {
     }
 
     private fun startServer() {
-        if (isRunning || !starting.compareAndSet(false, true)) {
-            Log.w(TAG, "already running or starting")
-            return
-        }
-
+        if (isRunning || !starting.compareAndSet(false, true)) return
         acquireWakeLock()
-
         try {
             server = Socks5Server(Config.PROXY_PORT) { info ->
                 if (!PacketTypes.NAMES.containsKey(info.type)) return@Socks5Server
-
                 PacketRegistry.put(info)
                 try { PacketStore.save(applicationContext, info) } catch (_: Exception) {}
                 packetListener?.invoke(info)
@@ -130,16 +126,15 @@ class ProxyService : Service() {
             serverRef = server
             server?.start()
             isRunning = true
-            Log.i(TAG, "✓ ProxyService STARTED")
+            Log.i(TAG, "✅ ProxyService RUNNING")
         } catch (e: Exception) {
             Log.e(TAG, "startServer: ${e.message}")
         }
-
         starting.set(false)
     }
 
     private fun stopServer() {
-        Log.i(TAG, "stopServer")
+        Log.i(TAG, "🔴 stopServer called")
         server?.stop()
         server = null
         serverRef = null
@@ -152,31 +147,23 @@ class ProxyService : Service() {
     private fun acquireWakeLock() {
         try {
             val pm = getSystemService(POWER_SERVICE) as PowerManager
-            wakeLock = pm.newWakeLock(
-                PowerManager.PARTIAL_WAKE_LOCK,
-                "AkRamtcp::SnifferWakeLock"
-            )
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AkRamtcp::Wake")
             wakeLock?.acquire(24 * 60 * 60 * 1000L)
-        } catch (e: Exception) {
-            Log.e(TAG, "wakeLock: ${e.message}")
-        }
+        } catch (_: Exception) {}
     }
 
     private fun releaseWakeLock() {
-        try {
-            if (wakeLock?.isHeld == true) wakeLock?.release()
-        } catch (_: Exception) {}
+        try { if (wakeLock?.isHeld == true) wakeLock?.release() } catch (_: Exception) {}
         wakeLock = null
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        Log.i(TAG, "⚠ onTaskRemoved — app swiped away")
-        // ✅ خدمة الـ foreground هتفضل شغالة — START_STICKY يعيد تشغيلها
+        Log.i(TAG, "⚠ onTaskRemoved — app swiped, service keeps running")
         super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
-        Log.i(TAG, "onDestroy — service killed")
+        Log.e(TAG, "💀💀💀 onDestroy CALLED")
         releaseWakeLock()
         super.onDestroy()
     }
