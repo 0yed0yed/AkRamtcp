@@ -31,6 +31,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Hex Import Screen -->
+        <activity
+            android:name=".HexActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"/>
+
         <!-- Main App -->
         <activity
             android:name=".MainActivity"

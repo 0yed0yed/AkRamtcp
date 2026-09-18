@@ -75,7 +75,7 @@ class LoginActivity : AppCompatActivity() {
                 // نجح → ادخل
                 AuthManager.saveSession(username, result.token, result.expiresIn)
                 Toast.makeText(this@LoginActivity, "✓ مرحباً $username", Toast.LENGTH_SHORT).show()
-                goToMain()
+                goToHex()
             } else {
                 // فشل → اعرض السبب وامسح الـ creds
                 Log.w(TAG, "auto-login failed: ${result.error}")
@@ -117,7 +117,7 @@ class LoginActivity : AppCompatActivity() {
                 }
 
                 Toast.makeText(this@LoginActivity, "✓ مرحباً $username", Toast.LENGTH_SHORT).show()
-                goToMain()
+                goToHex()
             } else {
                 showError(result.error ?: "فشل تسجيل الدخول")
             }
@@ -136,8 +136,8 @@ class LoginActivity : AppCompatActivity() {
         binding.errorText.visibility = View.VISIBLE
     }
 
-    private fun goToMain() {
-        startActivity(Intent(this, MainActivity::class.java))
+    private fun goToHex() {
+        startActivity(Intent(this, HexActivity::class.java))
         finish()
     }
 }

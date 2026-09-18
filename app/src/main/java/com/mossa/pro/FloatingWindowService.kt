@@ -13,13 +13,12 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
 import androidx.core.content.ContextCompat
-import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 
 class FloatingWindowService : Service() {
 
     companion object {
-        const val TAG = "AkRamtcp-Float"
+        const val TAG = "FloatWindow"
         const val ACTION_SHOW = "com.mossa.pro.FLOAT_SHOW"
         const val ACTION_HIDE = "com.mossa.pro.FLOAT_HIDE"
 
@@ -66,25 +65,50 @@ class FloatingWindowService : Service() {
             y = 300
         }
 
-        // Counter listener
+        // ---- عدّاد الباكيتات ----
+        counter.set(0)
         ProxyService.packetListener = { info ->
             counter.incrementAndGet()
             floatingView?.post {
-                val countView = floatingView?.findViewById<TextView>(R.id.fCount)
-                val lastView = floatingView?.findViewById<TextView>(R.id.fLast)
-                countView?.text = counter.get().toString()
+                floatingView?.findViewById<TextView>(R.id.fCount)?.text = counter.get().toString()
                 if (PacketTypes.NAMES.containsKey(info.type)) {
-                    lastView?.text = "${info.type} · ${info.direction.take(1)}"
+                    val name = PacketTypes.name(info.type)
+                    floatingView?.findViewById<TextView>(R.id.fLast)?.text =
+                        "${info.type} · $name"
                 }
             }
         }
 
-        // Close btn
-        floatingView?.findViewById<View>(R.id.fClose)?.setOnClickListener {
-            hide()
+        // ---- إغلاق ----
+        floatingView?.findViewById<View>(R.id.fClose)?.setOnClickListener { hide() }
+
+        // ---- زر التبديل ----
+        floatingView?.findViewById<View>(R.id.fToggle)?.setOnClickListener {
+            val intent = Intent(this, ProxyService::class.java)
+            if (ProxyService.isRunning) {
+                intent.action = ProxyService.ACTION_STOP
+            } else {
+                intent.action = ProxyService.ACTION_START
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+            floatingView?.postDelayed({ updateStatus() }, 500)
         }
 
-        // Drag
+        // ---- فتح التطبيق ----
+        floatingView?.findViewById<View>(R.id.fOpen)?.setOnClickListener {
+            try {
+                val i = packageManager.getLaunchIntentForPackage(packageName)
+                i?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(i)
+            } catch (e: Exception) {
+                Log.e(TAG, "open app: ${e.message}")
+            }
+        }
+
         setupDrag()
 
         try {
@@ -102,6 +126,7 @@ class FloatingWindowService : Service() {
         var initialY = 0
         var touchX = 0f
         var touchY = 0f
+        var isDragging = false
 
         root.setOnTouchListener { _, event ->
             when (event.action) {
@@ -110,15 +135,24 @@ class FloatingWindowService : Service() {
                     initialY = params?.y ?: 0
                     touchX = event.rawX
                     touchY = event.rawY
+                    isDragging = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    params?.x = initialX + (event.rawX - touchX).toInt()
-                    params?.y = initialY + (event.rawY - touchY).toInt()
-                    floatingView?.let {
-                        try { windowManager?.updateViewLayout(it, params) } catch (_: Exception) {}
+                    val dx = event.rawX - touchX
+                    val dy = event.rawY - touchY
+                    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) isDragging = true
+                    if (isDragging) {
+                        params?.x = initialX + dx.toInt()
+                        params?.y = initialY + dy.toInt()
+                        floatingView?.let {
+                            try { windowManager?.updateViewLayout(it, params) } catch (_: Exception) {}
+                        }
                     }
                     true
+                }
+                MotionEvent.ACTION_UP -> {
+                    !isDragging
                 }
                 else -> false
             }
@@ -127,11 +161,18 @@ class FloatingWindowService : Service() {
 
     private fun updateStatus() {
         floatingView?.post {
-            val dot = floatingView?.findViewById<View>(R.id.fDot)
-            dot?.background = ContextCompat.getDrawable(
-                this,
-                if (ProxyService.isRunning) R.drawable.dot_green else R.drawable.dot_red
-            )
+            val dot = floatingView?.findViewById<View>(R.id.fDot) ?: return@post
+            val toggle = floatingView?.findViewById<TextView>(R.id.fToggle) ?: return@post
+
+            if (ProxyService.isRunning) {
+                dot.background = ContextCompat.getDrawable(this, R.drawable.dot_green)
+                toggle.text = "■"
+                toggle.background = ContextCompat.getDrawable(this, R.drawable.bg_btn_danger)
+            } else {
+                dot.background = ContextCompat.getDrawable(this, R.drawable.dot_red)
+                toggle.text = "▶"
+                toggle.background = ContextCompat.getDrawable(this, R.drawable.bg_float_btn_play)
+            }
         }
     }
 

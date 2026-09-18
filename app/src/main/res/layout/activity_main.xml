@@ -1,319 +1,559 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
-    android:fillViewport="true">
+    android:orientation="vertical">
 
+    <!-- ===== HEADER ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_header_gradient"
         android:padding="14dp">
 
-        <!-- Header Card -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_header_gradient"
-            android:padding="18dp">
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/app_name"
+                android:text="AkRamtcp"
                 android:textColor="@color/primary"
-                android:textSize="30sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.02"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/subtitle"
-                android:textColor="@color/text"
-                android:textSize="11sp"
-                android:paddingTop="4dp"
-                android:letterSpacing="0.08"/>
+                android:textSize="20sp"
+                android:textStyle="bold"/>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:background="@drawable/bg_status_pill"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="6dp"
-                android:layout_marginTop="14dp"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:paddingTop="4dp">
 
                 <View
                     android:id="@+id/statusDot"
-                    android:layout_width="9dp"
-                    android:layout_height="9dp"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
                     android:background="@color/text_dim"/>
 
                 <TextView
                     android:id="@+id/statusLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="@string/status_idle"
-                    android:textColor="@color/text_bright"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:letterSpacing="0.1"/>
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Controls Card -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="14dp"
-            android:layout_marginTop="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/startBtn"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_btn_success"
-                    android:textColor="#0A0D12"
-                    android:text="@string/start"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.1"
-                    android:stateListAnimator="@null"/>
-
-                <Button
-                    android:id="@+id/stopBtn"
-                    android:layout_width="0dp"
-                    android:layout_height="52dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_btn_danger"
-                    android:textColor="#0A0D12"
-                    android:text="@string/stop"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.1"
-                    android:enabled="false"
-                    android:stateListAnimator="@null"/>
-            </LinearLayout>
-
-            <Button
-                android:id="@+id/floatBtn"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_btn_primary"
-                android:textColor="#0A0D12"
-                android:text="@string/float_off"
-                android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:stateListAnimator="@null"/>
-        </LinearLayout>
-
-        <!-- IMPORT FROM MAJOR LOGIN -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="14dp"
-            android:layout_marginTop="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/import_title"
-                    android:textColor="@color/accent"
-                    android:textStyle="bold"
-                    android:textSize="12sp"
-                    android:letterSpacing="0.12"/>
-
-                <TextView
-                    android:id="@+id/importClear"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/import_clear"
-                    android:textColor="@color/text_dim"
-                    android:textSize="11sp"
-                    android:padding="4dp"/>
-            </LinearLayout>
-
-            <EditText
-                android:id="@+id/importHex"
-                android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_import_box"
-                android:padding="10dp"
-                android:hint="@string/import_hint"
-                android:textColorHint="@color/text_dim"
-                android:textColor="@color/text_bright"
-                android:textSize="10sp"
-                android:fontFamily="monospace"
-                android:gravity="top|start"
-                android:inputType="textMultiLine|textNoSuggestions"
-                android:scrollbars="vertical"/>
-
-            <Button
-                android:id="@+id/importBtn"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_btn_accent"
-                android:textColor="#0A0D12"
-                android:text="@string/import_btn"
-                android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:stateListAnimator="@null"/>
-        </LinearLayout>
-
-        <!-- Keys Card -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="14dp"
-            android:layout_marginTop="12dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ENCRYPTION"
-                android:textColor="@color/accent"
-                android:textStyle="bold"
-                android:textSize="12sp"
-                android:letterSpacing="0.15"
-                android:paddingBottom="10dp"/>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:layout_width="50dp"
-                    android:layout_height="wrap_content"
-                    android:text="@string/key_label"
+                    android:layout_marginStart="6dp"
+                    android:text="READY"
                     android:textColor="@color/text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"/>
-
-                <EditText
-                    android:id="@+id/keyInput"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_input"
-                    android:paddingHorizontal="12dp"
-                    android:textColor="@color/text_bright"
-                    android:textSize="11sp"
-                    android:hint="16 bytes"
-                    android:textColorHint="@color/text_dim"
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:fontFamily="monospace"/>
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"/>
             </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/userLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="user"
+            android:textColor="@color/accent"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_pill"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp"/>
+    </LinearLayout>
+
+    <!-- ===== CONTENT (switches between tabs) ===== -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- TAB 1: HOME -->
+        <ScrollView
+            android:id="@+id/tabHome"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <!-- Main toggle card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SNIFFER"
+                        android:textColor="@color/text"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.15"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:id="@+id/homePacketCount"
+                        android:textColor="@color/primary"
+                        android:textSize="48sp"
+                        android:textStyle="bold"
+                        android:paddingTop="4dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="packets captured"
+                        android:textColor="@color/text_dim"
+                        android:textSize="11sp"/>
+
+                    <Button
+                        android:id="@+id/homeToggleBtn"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp"
+                        android:layout_marginTop="20dp"
+                        android:background="@drawable/bg_btn_success"
+                        android:textColor="#0A0D12"
+                        android:text="▶  START"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:letterSpacing="0.15"
+                        android:stateListAnimator="@null"/>
+                </LinearLayout>
+
+                <!-- Floating toggle -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="النافذة العائمة"
+                            android:textColor="@color/text_bright"
+                            android:textStyle="bold"
+                            android:textSize="14sp"/>
+
+                        <TextView
+                            android:id="@+id/floatState"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="مقفولة"
+                            android:textColor="@color/text_dim"
+                            android:textSize="11sp"
+                            android:paddingTop="2dp"/>
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/floatToggleBtn"
+                        android:layout_width="120dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_btn_primary"
+                        android:textColor="#0A0D12"
+                        android:text="OPEN"
+                        android:textStyle="bold"
+                        android:textSize="13sp"
+                        android:letterSpacing="0.1"
+                        android:stateListAnimator="@null"/>
+                </LinearLayout>
+
+                <!-- Quick info -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_card"
+                        android:padding="14dp"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔌"
+                            android:textSize="24sp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="PROXY"
+                            android:textColor="@color/text"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1"
+                            android:paddingTop="4dp"/>
+
+                        <TextView
+                            android:id="@+id/proxyState"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/success"
+                            android:textStyle="bold"
+                            android:textSize="12sp"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_card"
+                        android:padding="14dp"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔑"
+                            android:textSize="24sp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="KEYS"
+                            android:textColor="@color/text"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.1"
+                            android:paddingTop="4dp"/>
+
+                        <TextView
+                            android:id="@+id/keysState"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="default"
+                            android:textColor="@color/accent"
+                            android:textStyle="bold"
+                            android:textSize="12sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Import hex shortcut -->
+                <Button
+                    android:id="@+id/homeImportBtn"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_btn_accent"
+                    android:textColor="#0A0D12"
+                    android:text="🔑  IMPORT HEX · مفاتيح جديدة"
+                    android:textStyle="bold"
+                    android:textSize="13sp"
+                    android:stateListAnimator="@null"/>
+
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- TAB 2: PACKETS -->
+        <LinearLayout
+            android:id="@+id/tabPackets"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="14dp"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginTop="8dp">
+                android:paddingBottom="10dp">
 
                 <TextView
-                    android:layout_width="50dp"
-                    android:layout_height="wrap_content"
-                    android:text="@string/iv_label"
-                    android:textColor="@color/text"
-                    android:textSize="12sp"
-                    android:textStyle="bold"/>
-
-                <EditText
-                    android:id="@+id/ivInput"
+                    android:id="@+id/totalLabel"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:background="@drawable/bg_input"
-                    android:paddingHorizontal="12dp"
+                    android:text="PACKETS · 0"
                     android:textColor="@color/text_bright"
-                    android:textSize="11sp"
-                    android:hint="16 bytes"
-                    android:textColorHint="@color/text_dim"
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:fontFamily="monospace"/>
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:letterSpacing="0.05"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="LIVE"
+                    android:textColor="@color/success"
+                    android:textStyle="bold"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.2"/>
             </LinearLayout>
 
-            <Button
-                android:id="@+id/applyKeys"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_btn_accent"
-                android:textColor="#0A0D12"
-                android:text="@string/apply_keys"
-                android:textStyle="bold"
-                android:letterSpacing="0.12"
-                android:stateListAnimator="@null"/>
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:overScrollMode="never"/>
         </LinearLayout>
 
-        <!-- Total + Packets -->
-        <LinearLayout
+        <!-- TAB 3: ACCOUNT -->
+        <ScrollView
+            android:id="@+id/tabAccount"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingTop="18dp"
-            android:paddingBottom="10dp">
+            android:layout_height="match_parent"
+            android:visibility="gone">
 
-            <TextView
-                android:id="@+id/totalLabel"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="TOTAL · 0"
-                android:textColor="@color/text_bright"
-                android:textStyle="bold"
-                android:textSize="15sp"
-                android:letterSpacing="0.05"/>
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <!-- User card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_header_gradient"
+                    android:padding="20dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="👤"
+                        android:textSize="44sp"/>
+
+                    <TextView
+                        android:id="@+id/accountUsername"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="user"
+                        android:textColor="@color/primary"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:paddingTop="8dp"/>
+
+                    <TextView
+                        android:id="@+id/accountStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ACTIVE"
+                        android:textColor="@color/success"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.15"
+                        android:paddingTop="4dp"/>
+                </LinearLayout>
+
+                <!-- Time remaining -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginTop="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⏱ الوقت المتبقي"
+                        android:textColor="@color/accent"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.1"/>
+
+                    <TextView
+                        android:id="@+id/accountTimeLeft"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textColor="@color/text_bright"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:paddingTop="8dp"/>
+
+                    <TextView
+                        android:id="@+id/accountExpiryDate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ينتهي في: --"
+                        android:textColor="@color/text_dim"
+                        android:textSize="11sp"
+                        android:paddingTop="4dp"/>
+                </LinearLayout>
+
+                <!-- Device -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_card"
+                    android:padding="16dp"
+                    android:layout_marginTop="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📱 الجهاز"
+                        android:textColor="@color/accent"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.1"/>
+
+                    <TextView
+                        android:id="@+id/accountDevice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--"
+                        android:textColor="@color/text_bright"
+                        android:textSize="13sp"
+                        android:paddingTop="8dp"/>
+
+                    <TextView
+                        android:id="@+id/accountDeviceId"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textColor="@color/text_dim"
+                        android:textSize="10sp"
+                        android:fontFamily="monospace"
+                        android:paddingTop="4dp"/>
+                </LinearLayout>
+
+                <!-- Logout -->
+                <Button
+                    android:id="@+id/accountLogoutBtn"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/bg_btn_danger"
+                    android:textColor="#0A0D12"
+                    android:text="LOGOUT · خروج نهائي"
+                    android:textStyle="bold"
+                    android:textSize="13sp"
+                    android:letterSpacing="0.1"
+                    android:stateListAnimator="@null"/>
+
+            </LinearLayout>
+        </ScrollView>
+    </FrameLayout>
+
+    <!-- ===== BOTTOM NAVIGATION ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:background="@color/surface"
+        android:elevation="8dp">
+
+        <LinearLayout
+            android:id="@+id/navHome"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
 
             <TextView
+                android:id="@+id/navHomeIcon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="LIVE"
-                android:textColor="@color/success"
+                android:text="🏠"
+                android:textSize="20sp"/>
+
+            <TextView
+                android:id="@+id/navHomeLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="الرئيسية"
+                android:textColor="@color/primary"
+                android:textSize="10sp"
                 android:textStyle="bold"
-                android:textSize="11sp"
-                android:letterSpacing="0.2"/>
+                android:paddingTop="2dp"/>
         </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="300dp"
-            android:background="@android:color/transparent"
-            android:overScrollMode="never"/>
+        <LinearLayout
+            android:id="@+id/navPackets"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
 
+            <TextView
+                android:id="@+id/navPacketsIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📦"
+                android:textSize="20sp"/>
+
+            <TextView
+                android:id="@+id/navPacketsLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="الباكيتات"
+                android:textColor="@color/text_dim"
+                android:textSize="10sp"
+                android:paddingTop="2dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navAccount"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+
+            <TextView
+                android:id="@+id/navAccountIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="👤"
+                android:textSize="20sp"/>
+
+            <TextView
+                android:id="@+id/navAccountLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="الحساب"
+                android:textColor="@color/text_dim"
+                android:textSize="10sp"
+                android:paddingTop="2dp"/>
+        </LinearLayout>
     </LinearLayout>
-</ScrollView>
+
+</LinearLayout>

@@ -1,11 +1,12 @@
 package com.mossa.pro
 
 import android.content.Intent
-import android.util.Log
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
@@ -14,12 +15,17 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.mossa.pro.databinding.ActivityMainBinding
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
+    private val TAG = "MainActivity"
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: PacketAdapter
     private val packets = mutableListOf<PacketInfo>()
+    private var countdownTimer: CountDownTimer? = null
 
     private val overlayPermission = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -34,30 +40,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. تأكد من الـ auth
+        // Auth check
         AuthManager.init(this)
-        Log.i("MainActivity", "onCreate: isLoggedIn=${AuthManager.isLoggedIn()} user=${AuthManager.currentUsername}")
         if (!AuthManager.isLoggedIn()) {
-            Log.w("MainActivity", "not logged in — goToLogin")
             goToLogin()
-            return
-        }
-        Log.i("MainActivity", "auth OK — showing UI")
-
-        // 2. Anti-tamper check
-        AntiTamper.check(this)?.let { err ->
-            AlertDialog.Builder(this)
-                .setTitle("Security Warning")
-                .setMessage(err)
-                .setPositiveButton("OK") { _, _ -> finish() }
-                .setCancelable(false)
-                .show()
             return
         }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // RecyclerView
         adapter = PacketAdapter(packets) { packet ->
             val intent = Intent(this, PacketDetailActivity::class.java).apply {
                 putExtra(PacketDetailActivity.EXTRA_NUMBER, packet.number)
@@ -67,26 +60,38 @@ class MainActivity : AppCompatActivity() {
         binding.recycler.layoutManager = LinearLayoutManager(this)
         binding.recycler.adapter = adapter
 
+        // Packet listener
         ProxyService.packetListener = { info ->
             runOnUiThread {
                 packets.add(0, info)
                 if (packets.size > 200) packets.removeAt(packets.size - 1)
                 adapter.notifyDataSetChanged()
-                updateTotal()
+                updatePacketCount()
             }
         }
 
-        binding.startBtn.setOnClickListener { startProxy() }
-        binding.stopBtn.setOnClickListener { stopProxy() }
-        binding.applyKeys.setOnClickListener { applyKeys() }
-        binding.floatBtn.setOnClickListener { checkAndToggleFloating() }
-        binding.importBtn.setOnClickListener { importFromHex() }
-        binding.importClear.setOnClickListener { binding.importHex.setText("") }
+        // User label
+        binding.userLabel.text = AuthManager.currentUsername ?: "user"
 
-        // زر logout — لو مش موجود في الـ layout، نضيفه ديناميكياً
-        setupLogout()
+        // Nav
+        binding.navHome.setOnClickListener { selectTab("home") }
+        binding.navPackets.setOnClickListener { selectTab("packets") }
+        binding.navAccount.setOnClickListener { selectTab("account") }
 
-        // ابدأ الـ verifier
+        // Home tab buttons
+        binding.homeToggleBtn.setOnClickListener { toggleProxy() }
+        binding.floatToggleBtn.setOnClickListener { checkAndToggleFloating() }
+        binding.homeImportBtn.setOnClickListener {
+            startActivity(Intent(this, HexActivity::class.java))
+        }
+
+        // Account logout
+        binding.accountLogoutBtn.setOnClickListener { confirmLogout() }
+
+        // Apply pending keys from HexActivity
+        applyPendingKeys()
+
+        // Start verifier
         AuthVerifier.onRevoked = {
             runOnUiThread {
                 Toast.makeText(this, "الحساب اتوقف", Toast.LENGTH_LONG).show()
@@ -95,97 +100,55 @@ class MainActivity : AppCompatActivity() {
         }
         AuthVerifier.start(this)
 
-        // اعرض اسم المستخدم
-        binding.statusLabel.text = "مرحباً ${AuthManager.currentUsername ?: ""}"
-        updateStatus()
-        updateFloatButton()
+        // Load account info
+        loadAccountInfo()
+
+        // Initial state
+        selectTab("home")
+        updateProxyUI()
+        updateFloatUI()
     }
 
-    private fun setupLogout() {
-        // ضيف زر logout بجانب العنوان
-        binding.root.post {
-            try {
-                val parent = binding.statusLabel.parent as? android.view.ViewGroup ?: return@post
-                if (parent.findViewById<TextView>(9999) != null) return@post
-                val tv = TextView(this).apply {
-                    id = 9999
-                    text = "LOGOUT"
-                    setTextColor(0xFFF87171.toInt())
-                    textSize = 11f
-                    setPadding(20, 10, 20, 10)
-                    setOnClickListener { confirmLogout() }
-                }
-                parent.addView(tv)
-            } catch (_: Exception) {}
-        }
-    }
+    // ===== TAB SWITCH =====
+    private fun selectTab(tab: String) {
+        // Hide all
+        binding.tabHome.visibility = View.GONE
+        binding.tabPackets.visibility = View.GONE
+        binding.tabAccount.visibility = View.GONE
 
-    private fun confirmLogout() {
-        AlertDialog.Builder(this)
-            .setTitle("Logout")
-            .setMessage("متأكد من تسجيل الخروج؟")
-            .setPositiveButton("نعم") { _, _ -> forceLogout() }
-            .setNegativeButton("إلغاء", null)
-            .show()
-    }
+        // Reset nav colors
+        val dim = 0xFF64748B.toInt()
+        val active = 0xFF4FC3F7.toInt()
+        binding.navHomeLabel.setTextColor(dim)
+        binding.navPacketsLabel.setTextColor(dim)
+        binding.navAccountLabel.setTextColor(dim)
+        binding.navHomeLabel.setTypeface(null, android.graphics.Typeface.NORMAL)
+        binding.navPacketsLabel.setTypeface(null, android.graphics.Typeface.NORMAL)
+        binding.navAccountLabel.setTypeface(null, android.graphics.Typeface.NORMAL)
 
-    private fun forceLogout() {
-        AuthVerifier.stop()
-        AuthManager.logoutComplete()
-        goToLogin()
-    }
-
-    private fun goToLogin() {
-        startActivity(Intent(this, LoginActivity::class.java))
-        finish()
-    }
-
-    private fun importFromHex() {
-        val hex = binding.importHex.text.toString().trim()
-        if (hex.isEmpty()) {
-            Toast.makeText(this, "الصق الـ hex الأول", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val result = MajorLoginParser.parse(hex)
-        if (result == null) {
-            Toast.makeText(this, "✗ مش قادر أفك الـ hex", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        binding.keyInput.setText(result.keyCsv())
-        binding.ivInput.setText(result.ivCsv())
-        applyKeysSilent(result.key, result.iv)
-
-        val msg = "✓ تم استخراج المفاتيح\nKEY: ${result.keyHex()}\nIV: ${result.ivHex()}"
-        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
-    }
-
-    private fun applyKeys() {
-        try {
-            val keyText = binding.keyInput.text.toString().trim()
-            val ivText = binding.ivInput.text.toString().trim()
-            val key = parseKey(keyText)
-            val iv = parseKey(ivText)
-            if (key.size != 16 || iv.size != 16) {
-                Toast.makeText(this, "KEY & IV لازم 16 بايت", Toast.LENGTH_LONG).show()
-                return
+        when (tab) {
+            "home" -> {
+                binding.tabHome.visibility = View.VISIBLE
+                binding.navHomeLabel.setTextColor(active)
+                binding.navHomeLabel.setTypeface(null, android.graphics.Typeface.BOLD)
             }
-            applyKeysSilent(key, iv)
-            Toast.makeText(this, "✓ Keys applied", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "خطأ: ${e.message}", Toast.LENGTH_LONG).show()
+            "packets" -> {
+                binding.tabPackets.visibility = View.VISIBLE
+                binding.navPacketsLabel.setTextColor(active)
+                binding.navPacketsLabel.setTypeface(null, android.graphics.Typeface.BOLD)
+            }
+            "account" -> {
+                binding.tabAccount.visibility = View.VISIBLE
+                binding.navAccountLabel.setTextColor(active)
+                binding.navAccountLabel.setTypeface(null, android.graphics.Typeface.BOLD)
+                loadAccountInfo()
+            }
         }
     }
 
-    private fun applyKeysSilent(keyInts: IntArray, ivInts: IntArray) {
-        ProxyService.updateKeys(keyInts, ivInts)
-    }
-
-    private fun applyKeysSilent(key: ByteArray, iv: ByteArray) {
-        val k = IntArray(key.size) { key[it].toInt() and 0xFF }
-        val v = IntArray(iv.size) { iv[it].toInt() and 0xFF }
-        applyKeysSilent(k, v)
+    // ===== PROXY =====
+    private fun toggleProxy() {
+        if (ProxyService.isRunning) stopProxy() else startProxy()
     }
 
     private fun startProxy() {
@@ -197,11 +160,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             startService(intent)
         }
-        binding.statusLabel.text = getString(R.string.status_running)
-        binding.statusLabel.setTextColor(0xFF4ADE80.toInt())
-        binding.statusDot.background = getDrawable(R.drawable.dot_green)
-        binding.startBtn.isEnabled = false
-        binding.stopBtn.isEnabled = true
+        updateProxyUI()
     }
 
     private fun stopProxy() {
@@ -209,13 +168,31 @@ class MainActivity : AppCompatActivity() {
             action = ProxyService.ACTION_STOP
         }
         startService(intent)
-        binding.statusLabel.text = getString(R.string.status_idle)
-        binding.statusLabel.setTextColor(0xFF94A3B8.toInt())
-        binding.statusDot.background = getDrawable(R.drawable.dot_red)
-        binding.startBtn.isEnabled = true
-        binding.stopBtn.isEnabled = false
+        updateProxyUI()
     }
 
+    private fun updateProxyUI() {
+        val running = ProxyService.isRunning
+        if (running) {
+            binding.statusDot.background = getDrawable(R.drawable.dot_green)
+            binding.statusLabel.text = "RUNNING"
+            binding.statusLabel.setTextColor(0xFF4ADE80.toInt())
+            binding.homeToggleBtn.text = "■  STOP"
+            binding.homeToggleBtn.background = getDrawable(R.drawable.bg_btn_danger)
+            binding.proxyState.text = "ON"
+            binding.proxyState.setTextColor(0xFF4ADE80.toInt())
+        } else {
+            binding.statusDot.background = getDrawable(R.drawable.dot_red)
+            binding.statusLabel.text = "READY"
+            binding.statusLabel.setTextColor(0xFF64748B.toInt())
+            binding.homeToggleBtn.text = "▶  START"
+            binding.homeToggleBtn.background = getDrawable(R.drawable.bg_btn_success)
+            binding.proxyState.text = "OFF"
+            binding.proxyState.setTextColor(0xFF64748B.toInt())
+        }
+    }
+
+    // ===== FLOATING =====
     private fun checkAndToggleFloating() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             val intent = Intent(
@@ -241,14 +218,50 @@ class MainActivity : AppCompatActivity() {
                 startService(intent)
             }
         }
-        binding.floatBtn.postDelayed({ updateFloatButton() }, 300)
+        binding.floatToggleBtn.postDelayed({ updateFloatUI() }, 300)
     }
 
-    private fun updateFloatButton() {
-        binding.floatBtn.text = if (FloatingWindowService.isVisible)
-            getString(R.string.float_on)
-        else
-            getString(R.string.float_off)
+    private fun updateFloatUI() {
+        val visible = FloatingWindowService.isVisible
+        if (visible) {
+            binding.floatToggleBtn.text = "CLOSE"
+            binding.floatToggleBtn.background = getDrawable(R.drawable.bg_btn_danger)
+            binding.floatState.text = "شغالة"
+            binding.floatState.setTextColor(0xFF4ADE80.toInt())
+        } else {
+            binding.floatToggleBtn.text = "OPEN"
+            binding.floatToggleBtn.background = getDrawable(R.drawable.bg_btn_primary)
+            binding.floatState.text = "مقفولة"
+            binding.floatState.setTextColor(0xFF64748B.toInt())
+        }
+    }
+
+    // ===== PACKET COUNT =====
+    private fun updatePacketCount() {
+        binding.homePacketCount.text = packets.size.toString()
+        binding.totalLabel.text = "PACKETS · ${packets.size}"
+    }
+
+    // ===== KEYS =====
+    private fun applyPendingKeys() {
+        val key = SecurePrefs.getString("pending_key")
+        val iv = SecurePrefs.getString("pending_iv")
+        if (!key.isNullOrEmpty() && !iv.isNullOrEmpty()) {
+            try {
+                val k = parseKey(key)
+                val v = parseKey(iv)
+                if (k.size == 16 && v.size == 16) {
+                    ProxyService.updateKeys(k, v)
+                    binding.keysState.text = "custom"
+                    binding.keysState.setTextColor(0xFF4ADE80.toInt())
+                    Toast.makeText(this, "✓ تم تطبيق المفاتيح", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "applyPendingKeys: ${e.message}")
+            }
+            SecurePrefs.remove("pending_key")
+            SecurePrefs.remove("pending_iv")
+        }
     }
 
     private fun parseKey(s: String): IntArray {
@@ -258,35 +271,104 @@ class MainActivity : AppCompatActivity() {
             val clean = s.replace(" ", "")
             val out = IntArray(clean.length / 2)
             for (i in out.indices) {
-                out[i] = ((Character.digit(clean[i*2], 16) shl 4) +
-                          Character.digit(clean[i*2+1], 16))
+                out[i] = ((Character.digit(clean[i * 2], 16) shl 4) +
+                          Character.digit(clean[i * 2 + 1], 16))
             }
             out
         }
     }
 
-    private fun updateStatus() {
-        binding.startBtn.isEnabled = !ProxyService.isRunning
-        binding.stopBtn.isEnabled = ProxyService.isRunning
+    // ===== ACCOUNT =====
+    private fun loadAccountInfo() {
+        binding.accountUsername.text = AuthManager.currentUsername ?: "--"
+
+        // Device
+        val devModel = DeviceId.model()
+        val devId = DeviceId.get(this)
+        binding.accountDevice.text = devModel
+        binding.accountDeviceId.text = devId.take(32) + "..."
+
+        // Expiry
+        val exp = SecurePrefs.getLong(AuthConfig.PREF_TOKEN_EXP, 0L)
+        updateExpiryDisplay(exp)
     }
 
-    private fun updateTotal() {
-        binding.totalLabel.text = "TOTAL · ${packets.size}"
+    private fun updateExpiryDisplay(expSec: Long) {
+        countdownTimer?.cancel()
+        if (expSec <= 0) {
+            binding.accountTimeLeft.text = "--"
+            binding.accountExpiryDate.text = "ينتهي في: --"
+            return
+        }
+
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+        binding.accountExpiryDate.text = "ينتهي في: " + sdf.format(Date(expSec * 1000))
+
+        val now = System.currentTimeMillis() / 1000
+        val left = expSec - now
+        if (left <= 0) {
+            binding.accountTimeLeft.text = "انتهى"
+            binding.accountStatus.text = "EXPIRED"
+            binding.accountStatus.setTextColor(0xFFFBBF24.toInt())
+            return
+        }
+
+        countdownTimer = object : CountDownTimer(left * 1000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                val s = millisUntilFinished / 1000
+                val h = s / 3600
+                val m = (s % 3600) / 60
+                val sec = s % 60
+                binding.accountTimeLeft.text = String.format(
+                    Locale.US, "%02d:%02d:%02d", h, m, sec
+                )
+            }
+            override fun onFinish() {
+                binding.accountTimeLeft.text = "انتهى"
+            }
+        }.start()
+
+        binding.accountStatus.text = "ACTIVE"
+        binding.accountStatus.setTextColor(0xFF4ADE80.toInt())
     }
 
+    // ===== LOGOUT =====
+    private fun confirmLogout() {
+        AlertDialog.Builder(this)
+            .setTitle("خروج")
+            .setMessage("هتحتاج تسجل دخول تاني بعد الخروج. متأكد؟")
+            .setPositiveButton("نعم") { _, _ -> forceLogout() }
+            .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
+    private fun forceLogout() {
+        AuthVerifier.stop()
+        AuthManager.logoutComplete()
+        goToLogin()
+    }
+
+    private fun goToLogin() {
+        startActivity(Intent(this, LoginActivity::class.java))
+        finish()
+    }
+
+    // ===== LIFECYCLE =====
     override fun onResume() {
         super.onResume()
-        // تحقق إن لسه مسجّل دخول
         if (!AuthManager.isLoggedIn()) {
             goToLogin()
             return
         }
-        updateStatus()
-        updateFloatButton()
+        updateProxyUI()
+        updateFloatUI()
+        updatePacketCount()
+        loadAccountInfo()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        countdownTimer?.cancel()
         AuthVerifier.stop()
     }
 }

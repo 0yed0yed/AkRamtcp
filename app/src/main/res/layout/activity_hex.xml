@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="22dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_header_gradient"
+            android:padding="22dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔑"
+                android:textSize="40sp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="مفاتيح الجلسة"
+                android:textColor="@color/primary"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:paddingTop="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="عندك hex لـ MajorLogin؟ الصقه هنا لاستخراج KEY/IV"
+                android:textColor="@color/text"
+                android:textSize="12sp"
+                android:paddingTop="6dp"
+                android:lineSpacingExtra="3dp"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="HEX"
+            android:textColor="@color/accent"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:letterSpacing="0.15"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="8dp"/>
+
+        <EditText
+            android:id="@+id/hexInput"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:background="@drawable/bg_import_box"
+            android:padding="12dp"
+            android:gravity="top|start"
+            android:hint="F8 BB 6C 2C D0 E3 ..."
+            android:textColorHint="@color/text_dim"
+            android:textColor="@color/text_bright"
+            android:textSize="10sp"
+            android:fontFamily="monospace"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:scrollbars="vertical"/>
+
+        <Button
+            android:id="@+id/extractBtn"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_btn_accent"
+            android:textColor="#0A0D12"
+            android:text="EXTRACT KEY/IV"
+            android:textStyle="bold"
+            android:letterSpacing="0.1"
+            android:stateListAnimator="@null"/>
+
+        <Button
+            android:id="@+id/skipBtn"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_btn_outline"
+            android:textColor="@color/text"
+            android:text="SKIP · تخطي والمتابعة بدون مفاتيح"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:stateListAnimator="@null"/>
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:visibility="gone"
+            android:indeterminateTint="@color/primary"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:text="لو مش عندك hex دلوقتي، اضغط SKIP وهتلاقي الخيار في التطبيق بعدين"
+            android:textColor="@color/text_dim"
+            android:textSize="10sp"/>
+
+    </LinearLayout>
+</ScrollView>
