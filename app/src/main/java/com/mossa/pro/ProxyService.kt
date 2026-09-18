@@ -42,30 +42,33 @@ class ProxyService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.i(TAG, "🔵 ProxyService onCreate")
+        Log.i(TAG, "🔵 onCreate")
         createChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.i(TAG, "🟢 onStartCommand: ${intent?.action}")
+        val action = intent?.action
+        Log.i(TAG, "🟢 onStartCommand: $action")
 
-        // ✅ IMPORTANT: startForeground أول سطر
-        try {
-            startForeground(NOTIF_ID, buildNotification())
-            Log.i(TAG, "✅ startForeground OK")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ startForeground FAILED: ${e.message}")
+        // ✅ لو STOP — نوقف فوراً بدون startForeground
+        if (action == ACTION_STOP) {
+            stopServer()
+            return START_NOT_STICKY
         }
 
-        when (intent?.action) {
-            ACTION_STOP -> {
-                stopServer()
-                return START_NOT_STICKY
+        // ✅ startForeground مرة واحدة بس
+        if (!isRunning) {
+            try {
+                startForeground(NOTIF_ID, buildNotification())
+                Log.i(TAG, "✅ startForeground OK")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ startForeground: ${e.message}")
             }
-            else -> {
-                startServer()
-            }
+            startServer()
+        } else {
+            Log.i(TAG, "already running — skip startForeground")
         }
+
         return START_STICKY
     }
 
@@ -134,7 +137,7 @@ class ProxyService : Service() {
     }
 
     private fun stopServer() {
-        Log.i(TAG, "🔴 stopServer called")
+        Log.i(TAG, "🔴 stopServer")
         server?.stop()
         server = null
         serverRef = null
@@ -158,12 +161,12 @@ class ProxyService : Service() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        Log.i(TAG, "⚠ onTaskRemoved — app swiped, service keeps running")
+        Log.i(TAG, "⚠ onTaskRemoved — service keeps running")
         super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
-        Log.e(TAG, "💀💀💀 onDestroy CALLED")
+        Log.e(TAG, "💀 onDestroy")
         releaseWakeLock()
         super.onDestroy()
     }

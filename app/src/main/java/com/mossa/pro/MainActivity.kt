@@ -162,8 +162,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ===== PROXY =====
+    @Volatile private var lastToggleTime = 0L
+
     private fun toggleProxy() {
-        if (ProxyService.isRunning) stopProxy() else startProxy()
+        // ✅ منع الضغط المزدوج
+        val now = System.currentTimeMillis()
+        if (now - lastToggleTime < 1500) {
+            Log.w(TAG, "toggle ignored (too fast)")
+            return
+        }
+        lastToggleTime = now
+
+        if (ProxyService.isRunning) {
+            Log.i(TAG, "toggle → STOP")
+            stopProxy()
+        } else {
+            Log.i(TAG, "toggle → START")
+            startProxy()
+        }
     }
 
     private fun startProxy() {
