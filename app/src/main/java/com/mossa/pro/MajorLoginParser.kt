@@ -6,14 +6,14 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * يحلل MajorLogin response ويستخرج KEY/IV.
+ * يستخرج KEY/IV من MajorLogin response.
  *
- * الـ response = protobuf MyMessage:
- *   field21 (varint) = timestamp
- *   field22 (bytes 16) = KEY
- *   field23 (bytes 16) = IV
+ * الطريقة: يدور على markers في الـ bytes:
+ *   B2 01 <len> <KEY bytes>   ← field22 = KEY
+ *   BA 01 <len> <IV bytes>    ← field23 = IV
+ *   A8 01 <varint>            ← field21 = timestamp
  *
- * الـ hex ممكن يبقى فيه header قبل الـ protobuf، بنتعامل معاه.
+ * مش محتاجين نحلل الـ protobuf كامل — بس ندوّر على markers.
  */
 object MajorLoginParser {
 
@@ -36,112 +36,112 @@ object MajorLoginParser {
 
     fun parse(hexInput: String): Result? {
         try {
-            // 1. نظّف
             val clean = hexInput.replace(" ", "")
                 .replace("\n", "")
                 .replace("\r", "")
                 .replace("\t", "")
                 .trim()
             if (clean.length < 20 || clean.length % 2 != 0) {
-                Log.e(TAG, "invalid hex length")
+                Log.e(TAG, "invalid hex length: ${clean.length}")
                 return null
             }
 
             val bytes = hexToBytes(clean)
+            Log.i(TAG, "parsing ${bytes.size} bytes")
 
-            // 2. دوّر على بداية MyMessage
-            // markers: field21 = 0xA8 0x01, field22 = 0xB2 0x01, field23 = 0xBA 0x01
-            val offsets = mutableListOf(0)
-            for (i in 0 until minOf(500, bytes.size - 1)) {
-                val b1 = bytes[i].toInt() and 0xFF
-                val b2 = bytes[i + 1].toInt() and 0xFF
-                if ((b1 == 0xA8 && b2 == 0x01) ||
-                    (b1 == 0xB2 && b2 == 0x01) ||
-                    (b1 == 0xBA && b2 == 0x01)) {
-                    offsets.add(i)
-                }
+            // دوّر على field23 (IV) — آخر marker
+            val iv = findBytesField(bytes, 0xBA)
+            if (iv == null || iv.size != 16) {
+                Log.e(TAG, "IV not found or wrong size: ${iv?.size}")
+                return null
             }
 
-            // 3. جرب كل offset
-            for (off in offsets) {
-                val result = tryParseAt(bytes, off)
-                if (result != null) {
-                    Log.i(TAG, "✓ Parsed at offset $off")
-                    return result
-                }
+            // دوّر على field22 (KEY)
+            val key = findBytesField(bytes, 0xB2)
+            if (key == null || key.size != 16) {
+                Log.e(TAG, "KEY not found or wrong size: ${key?.size}")
+                return null
             }
 
-            Log.e(TAG, "no valid MyMessage found")
-            return null
+            // دوّر على field21 (timestamp) — varint
+            val ts = findVarintField(bytes, 0xA8)
+
+            Log.i(TAG, "✓ KEY=${bytesToHex(key)}")
+            Log.i(TAG, "✓ IV=${bytesToHex(iv)}")
+            Log.i(TAG, "✓ TS=${ts}")
+
+            return Result(
+                timestamp = ts ?: (System.currentTimeMillis() / 1000),
+                key = key,
+                iv = iv
+            )
         } catch (e: Exception) {
-            Log.e(TAG, "parse error: ${e.message}")
+            Log.e(TAG, "parse error: ${e.message}", e)
             return null
         }
     }
 
-    private fun tryParseAt(bytes: ByteArray, start: Int): Result? {
-        var pos = start
-        var ts: Long? = null
-        var key: ByteArray? = null
-        var iv: ByteArray? = null
-
-        while (pos < bytes.size) {
-            val (tag, np) = readVarint(bytes, pos) ?: return null
-            pos = np
-            val fieldNum = (tag shr 3).toInt()
-            val wireType = (tag and 0x7).toInt()
-
-            when (wireType) {
-                0 -> {  // varint
-                    val (v, np2) = readVarint(bytes, pos) ?: return null
-                    pos = np2
-                    if (fieldNum == 21) ts = v
+    /**
+     * يدور على pattern: <marker> 0x01 <varint length> <bytes>
+     * marker مثلاً 0xB2 → bytes pattern [0xB2, 0x01, <len>, <data...>]
+     */
+    private fun findBytesField(bytes: ByteArray, marker: Int): ByteArray? {
+        var i = 0
+        while (i < bytes.size - 2) {
+            val b0 = bytes[i].toInt() and 0xFF
+            val b1 = bytes[i + 1].toInt() and 0xFF
+            if (b0 == marker && b1 == 0x01) {
+                // اقرأ length كـ varint من i+2
+                var pos = i + 2
+                var len = 0L
+                var shift = 0
+                var lenBytes = 0
+                while (pos < bytes.size && lenBytes < 5) {
+                    val b = bytes[pos].toInt() and 0xFF
+                    len = len or ((b and 0x7F).toLong() shl shift)
+                    pos++
+                    lenBytes++
+                    if ((b and 0x80) == 0) break
+                    shift += 7
                 }
-                2 -> {  // length-delimited
-                    val (len, np2) = readVarint(bytes, pos) ?: return null
-                    pos = np2
-                    val lenInt = len.toInt()
-                    if (lenInt < 0 || pos + lenInt > bytes.size) break
+                val lenInt = len.toInt()
+                if (lenInt > 0 && lenInt <= 64 && pos + lenInt <= bytes.size) {
                     val data = bytes.copyOfRange(pos, pos + lenInt)
-                    pos += lenInt
-                    when (fieldNum) {
-                        22 -> key = data
-                        23 -> iv = data
+                    // تحقق: مش كله صفر + مش printable ascii
+                    if (!data.all { it == 0.toByte() } && !isPrintableAscii(data)) {
+                        return data
                     }
                 }
-                1 -> { pos += 8; if (pos > bytes.size) break }
-                5 -> { pos += 4; if (pos > bytes.size) break }
-                else -> break
             }
-        }
-
-        // تحقق
-        if (key == null || iv == null) return null
-        if (key.size != 16 || iv.size != 16) return null
-        if (key.all { it == 0.toByte() }) return null
-        if (iv.all { it == 0.toByte() }) return null
-
-        return Result(
-            timestamp = ts ?: (System.currentTimeMillis() / 1000),
-            key = key,
-            iv = iv
-        )
-    }
-
-    private fun readVarint(data: ByteArray, start: Int): Pair<Long, Int>? {
-        var result = 0L
-        var shift = 0
-        var pos = start
-        while (pos < data.size) {
-            val b = data[pos].toInt() and 0xFF
-            result = result or ((b and 0x7F).toLong() shl shift)
-            pos++
-            if ((b and 0x80) == 0) return Pair(result, pos)
-            shift += 7
-            if (shift > 63) return null
+            i++
         }
         return null
     }
+
+    private fun findVarintField(bytes: ByteArray, marker: Int): Long? {
+        var i = 0
+        while (i < bytes.size - 2) {
+            val b0 = bytes[i].toInt() and 0xFF
+            val b1 = bytes[i + 1].toInt() and 0xFF
+            if (b0 == marker && b1 == 0x01) {
+                var pos = i + 2
+                var result = 0L
+                var shift = 0
+                while (pos < bytes.size && shift < 64) {
+                    val b = bytes[pos].toInt() and 0xFF
+                    result = result or ((b and 0x7F).toLong() shl shift)
+                    pos++
+                    if ((b and 0x80) == 0) return result
+                    shift += 7
+                }
+            }
+            i++
+        }
+        return null
+    }
+
+    private fun isPrintableAscii(b: ByteArray): Boolean =
+        b.all { it.toInt() in 0x20..0x7E }
 
     private fun hexToBytes(s: String): ByteArray {
         val out = ByteArray(s.length / 2)
