@@ -51,6 +51,13 @@ class ProxyService : Service() {
         val action = intent?.action
         Log.i(TAG, "🟢 onStartCommand: $action")
 
+        // 🔍 trace عشان نعرف مين اللي بعت الـ intent
+        try {
+            throw Exception("onStartCommand caller trace: $action")
+        } catch (e: Exception) {
+            Log.i(TAG, "stack trace:", e)
+        }
+
         // ✅ لو STOP — نتجاهله لو جاي بسرعة من START
         if (action == ACTION_STOP) {
             val sinceStart = System.currentTimeMillis() - lastStartTime
