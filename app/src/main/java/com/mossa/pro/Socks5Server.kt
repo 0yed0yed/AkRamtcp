@@ -178,7 +178,7 @@ class Socks5Server(
             val hex = bytesToHex(data)
             val type = if (hex.length >= 4) hex.substring(0, 4).uppercase() else "0000"
 
-            val decrypted = AesHelper.decrypt(hex, currentKey, currentIv)
+            val decrypted = AesHelper.decryptPacket(hex, currentKey, currentIv)
             val decoded = if (decrypted != null) ProtobufDecoder.decode(decrypted)
                           else ProtobufDecoder.decode(hex)
 
