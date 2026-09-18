@@ -5,8 +5,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.mossa.pro.databinding.ActivityMainBinding
@@ -29,6 +32,25 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 1. تأكد من الـ auth
+        AuthManager.init(this)
+        if (!AuthManager.isLoggedIn()) {
+            goToLogin()
+            return
+        }
+
+        // 2. Anti-tamper check
+        AntiTamper.check(this)?.let { err ->
+            AlertDialog.Builder(this)
+                .setTitle("Security Warning")
+                .setMessage(err)
+                .setPositiveButton("OK") { _, _ -> finish() }
+                .setCancelable(false)
+                .show()
+            return
+        }
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -54,15 +76,64 @@ class MainActivity : AppCompatActivity() {
         binding.stopBtn.setOnClickListener { stopProxy() }
         binding.applyKeys.setOnClickListener { applyKeys() }
         binding.floatBtn.setOnClickListener { checkAndToggleFloating() }
-
-        // IMPORT FROM HEX
         binding.importBtn.setOnClickListener { importFromHex() }
-        binding.importClear.setOnClickListener {
-            binding.importHex.setText("")
-        }
+        binding.importClear.setOnClickListener { binding.importHex.setText("") }
 
+        // زر logout — لو مش موجود في الـ layout، نضيفه ديناميكياً
+        setupLogout()
+
+        // ابدأ الـ verifier
+        AuthVerifier.onRevoked = {
+            runOnUiThread {
+                Toast.makeText(this, "الحساب اتوقف", Toast.LENGTH_LONG).show()
+                forceLogout()
+            }
+        }
+        AuthVerifier.start(this)
+
+        // اعرض اسم المستخدم
+        binding.statusLabel.text = "مرحباً ${AuthManager.currentUsername ?: ""}"
         updateStatus()
         updateFloatButton()
+    }
+
+    private fun setupLogout() {
+        // ضيف زر logout بجانب العنوان
+        binding.root.post {
+            try {
+                val parent = binding.statusLabel.parent as? android.view.ViewGroup ?: return@post
+                if (parent.findViewById<TextView>(9999) != null) return@post
+                val tv = TextView(this).apply {
+                    id = 9999
+                    text = "LOGOUT"
+                    setTextColor(0xFFF87171.toInt())
+                    textSize = 11f
+                    setPadding(20, 10, 20, 10)
+                    setOnClickListener { confirmLogout() }
+                }
+                parent.addView(tv)
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun confirmLogout() {
+        AlertDialog.Builder(this)
+            .setTitle("Logout")
+            .setMessage("متأكد من تسجيل الخروج؟")
+            .setPositiveButton("نعم") { _, _ -> forceLogout() }
+            .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
+    private fun forceLogout() {
+        AuthVerifier.stop()
+        AuthManager.logout()
+        goToLogin()
+    }
+
+    private fun goToLogin() {
+        startActivity(Intent(this, LoginActivity::class.java))
+        finish()
     }
 
     private fun importFromHex() {
@@ -78,17 +149,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // حط KEY/IV في الـ inputs
         binding.keyInput.setText(result.keyCsv())
         binding.ivInput.setText(result.ivCsv())
-
-        // طبّق المفاتيح
         applyKeysSilent(result.key, result.iv)
 
-        // Toast بالنتيجة
-        val msg = "✓ تم استخراج المفاتيح\n" +
-                "KEY: ${result.keyHex()}\n" +
-                "IV: ${result.ivHex()}"
+        val msg = "✓ تم استخراج المفاتيح\nKEY: ${result.keyHex()}\nIV: ${result.ivHex()}"
         Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
     }
 
@@ -110,7 +175,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyKeysSilent(keyInts: IntArray, ivInts: IntArray) {
-        // حدّث المفاتيح في الـ service عن طريق الـ ProxyService
         ProxyService.updateKeys(keyInts, ivInts)
     }
 
@@ -198,10 +262,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateStatus() {
-        binding.statusLabel.text = if (ProxyService.isRunning)
-            getString(R.string.status_running)
-        else
-            getString(R.string.status_idle)
         binding.startBtn.isEnabled = !ProxyService.isRunning
         binding.stopBtn.isEnabled = ProxyService.isRunning
     }
@@ -212,7 +272,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // تحقق إن لسه مسجّل دخول
+        if (!AuthManager.isLoggedIn()) {
+            goToLogin()
+            return
+        }
         updateStatus()
         updateFloatButton()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        AuthVerifier.stop()
     }
 }

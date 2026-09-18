@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="22dp"
+        android:gravity="center"
+        android:minHeight="600dp">
+
+        <!-- Logo/Title -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_header_gradient"
+            android:padding="24dp"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AkRamtcp"
+                android:textColor="@color/primary"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TCP Sniffer · SOCKS5 · AES"
+                android:textColor="@color/text"
+                android:textSize="11sp"
+                android:paddingTop="6dp"
+                android:letterSpacing="0.08"/>
+
+            <View
+                android:layout_width="60dp"
+                android:layout_height="2dp"
+                android:background="@color/accent"
+                android:layout_marginTop="18dp"/>
+        </LinearLayout>
+
+        <!-- Form -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:text="SIGN IN"
+            android:textColor="@color/accent"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:letterSpacing="0.2"
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="10dp"/>
+
+        <EditText
+            android:id="@+id/usernameInput"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_input"
+            android:paddingHorizontal="16dp"
+            android:hint="Username"
+            android:textColorHint="@color/text_dim"
+            android:textColor="@color/text_bright"
+            android:inputType="text"
+            android:maxLines="1"
+            android:textSize="14sp"
+            android:fontFamily="monospace"/>
+
+        <EditText
+            android:id="@+id/passwordInput"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_input"
+            android:paddingHorizontal="16dp"
+            android:hint="Password"
+            android:textColorHint="@color/text_dim"
+            android:textColor="@color/text_bright"
+            android:inputType="textPassword"
+            android:maxLines="1"
+            android:textSize="14sp"
+            android:fontFamily="monospace"/>
+
+        <!-- Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="18dp">
+
+            <Button
+                android:id="@+id/clearBtn"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_btn_outline"
+                android:textColor="@color/text"
+                android:text="CLEAR"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:stateListAnimator="@null"/>
+
+            <Button
+                android:id="@+id/loginBtn"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="2"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_btn_primary"
+                android:textColor="#0A0D12"
+                android:text="SIGN IN"
+                android:textStyle="bold"
+                android:letterSpacing="0.15"
+                android:stateListAnimator="@null"/>
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:visibility="gone"
+            android:indeterminateTint="@color/primary"/>
+
+        <TextView
+            android:id="@+id/errorText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:background="@drawable/bg_input"
+            android:padding="12dp"
+            android:textColor="@color/danger"
+            android:textSize="12sp"
+            android:visibility="gone"/>
+
+        <!-- Info -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:gravity="center"
+            android:text="اتصل بالمسؤول للحصول على حساب"
+            android:textColor="@color/text_dim"
+            android:textSize="10sp"/>
+
+    </LinearLayout>
+</ScrollView>
