@@ -24,12 +24,11 @@ class ProxyService : Service() {
 
         var packetListener: ((PacketInfo) -> Unit)? = null
 
-        // مرجع للـ server عشان نقدر نحدّث المفاتيح
         @Volatile private var serverRef: Socks5Server? = null
 
         fun updateKeys(key: IntArray, iv: IntArray) {
             serverRef?.setKeys(key, iv)
-            Log.i(TAG, "Keys updated: key=${key.joinToString(",")}")
+            Log.i(TAG, "Keys updated")
         }
     }
 
@@ -52,7 +51,16 @@ class ProxyService : Service() {
         startForegroundNotification()
 
         server = Socks5Server(Config.PROXY_PORT) { info ->
-            if (!PacketTypes.NAMES.containsKey(info.type)) {
+            // ✅ عرض كل الباكيتات (الفلتر اتشال مؤقتاً للتشخيص)
+            Log.d(TAG, "packet #${info.number} type=${info.type} dir=${info.direction} size=${info.hex.length/2}")
+
+            // فلتر خفيف: نعرض اللي type بتاعه يبدأ بـ 12 أو 05 أو 03 (المعروفة)
+            val knownOrSuspicious = PacketTypes.NAMES.containsKey(info.type) ||
+                                    info.type.startsWith("12") ||
+                                    info.type.startsWith("05") ||
+                                    info.type.startsWith("0E") ||
+                                    info.type.startsWith("16")
+            if (!knownOrSuspicious) {
                 return@Socks5Server
             }
 
