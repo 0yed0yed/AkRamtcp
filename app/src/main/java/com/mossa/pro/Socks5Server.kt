@@ -24,8 +24,17 @@ class Socks5Server(
     private val counter = AtomicInteger(0)
     private val pool = Executors.newCachedThreadPool()
 
-    @Volatile var currentKey: IntArray = Config.DEFAULT_KEY.copyOf()
-    @Volatile var currentIv: IntArray = Config.DEFAULT_IV.copyOf()
+    @Volatile private var currentKey: IntArray = Config.DEFAULT_KEY.copyOf()
+    @Volatile private var currentIv: IntArray = Config.DEFAULT_IV.copyOf()
+
+    /**
+     * يحدّث مفاتيح AES في وقت التشغيل.
+     */
+    fun setKeys(key: IntArray, iv: IntArray) {
+        currentKey = key.copyOf()
+        currentIv = iv.copyOf()
+        Log.i(TAG, "AES keys updated (key=${key.size} bytes, iv=${iv.size} bytes)")
+    }
 
     fun start() {
         if (running.get()) return
@@ -63,21 +72,18 @@ class Socks5Server(
             val input = client.getInputStream()
             val output = client.getOutputStream()
 
-            // --- handshake ---
             val ver = input.read().toByte()
             if (ver != SOCKS5_VERSION) { client.close(); return }
             val nmethods = input.read()
             val methods = ByteArray(nmethods)
             input.read(methods)
-            // رد: طريقة 0 (بدون auth)
             output.write(byteArrayOf(SOCKS5_VERSION, 0))
             output.flush()
 
-            // --- request ---
             val reqVer = input.read().toByte()
             if (reqVer != SOCKS5_VERSION) { client.close(); return }
             val cmd = input.read()
-            input.read()  // RSV
+            input.read()
             val atyp = input.read()
 
             val address: String = when (atyp) {
@@ -101,11 +107,8 @@ class Socks5Server(
             val portLo = input.read()
             val port = (portHi shl 8) or portLo
 
-            if (cmd.toInt() != 1) {  // CONNECT فقط
-                client.close(); return
-            }
+            if (cmd.toInt() != 1) { client.close(); return }
 
-            // --- connect remote ---
             val remote = Socket()
             remote.tcpNoDelay = true
             try {
@@ -117,7 +120,6 @@ class Socks5Server(
                 return
             }
 
-            // --- reply success ---
             val bindAddr = remote.localAddress.address
             val bindPort = remote.localPort
             val reply = byteArrayOf(
@@ -129,7 +131,6 @@ class Socks5Server(
             output.write(reply)
             output.flush()
 
-            // --- exchange loop ---
             exchange(client, remote, input, output)
         } catch (e: Exception) {
             try { client.close() } catch (_: Exception) {}
@@ -147,7 +148,7 @@ class Socks5Server(
                     val n = cin.read(buf)
                     if (n <= 0) break
                     val data = buf.copyOf(n)
-                    analyzeAndReport(data, "SERVER")   // من العميل (اللعبة) → السيرفر
+                    analyzeAndReport(data, "SERVER")
                     rout.write(data); rout.flush()
                 }
             } catch (_: Exception) {}
@@ -161,7 +162,7 @@ class Socks5Server(
                     val n = rin.read(buf)
                     if (n <= 0) break
                     val data = buf.copyOf(n)
-                    analyzeAndReport(data, "CLIENT")   // من السيرفر → اللعبة
+                    analyzeAndReport(data, "CLIENT")
                     cout.write(data); cout.flush()
                 }
             } catch (_: Exception) {}
