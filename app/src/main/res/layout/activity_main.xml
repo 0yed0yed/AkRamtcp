@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Header -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="AkRamtcp"
+        android:textColor="@color/primary"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingBottom="4dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="SOCKS5 TCP Sniffer + AES Decoder"
+        android:textColor="@color/text"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:paddingBottom="12dp"/>
+
+    <!-- Status + buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/surface"
+        android:padding="10dp">
+
+        <TextView
+            android:id="@+id/statusLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/status_idle"
+            android:textColor="@color/text"
+            android:textStyle="bold"
+            android:textSize="14sp"/>
+
+        <Button
+            android:id="@+id/startBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/success"
+            android:textColor="@color/text_bright"
+            android:text="@string/start"/>
+
+        <Button
+            android:id="@+id/stopBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/danger"
+            android:textColor="@color/text_bright"
+            android:text="@string/stop"
+            android:enabled="false"/>
+    </LinearLayout>
+
+    <!-- Keys -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/surface"
+        android:padding="10dp"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ENCRYPTION KEY / IV"
+            android:textColor="@color/accent"
+            android:textStyle="bold"
+            android:textSize="12sp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="KEY:"
+                android:textColor="@color/text"
+                android:paddingEnd="6dp"/>
+
+            <EditText
+                android:id="@+id/keyInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@color/bg"
+                android:padding="8dp"
+                android:textColor="@color/text"
+                android:textSize="11sp"
+                android:inputType="text"
+                android:maxLines="1"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="IV: "
+                android:textColor="@color/text"
+                android:paddingEnd="12dp"/>
+
+            <EditText
+                android:id="@+id/ivInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@color/bg"
+                android:padding="8dp"
+                android:textColor="@color/text"
+                android:textSize="11sp"
+                android:inputType="text"
+                android:maxLines="1"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/applyKeys"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:backgroundTint="@color/primary"
+            android:textColor="@color/bg"
+            android:textStyle="bold"
+            android:text="@string/apply_keys"/>
+    </LinearLayout>
+
+    <!-- Total -->
+    <TextView
+        android:id="@+id/totalLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/total"
+        android:textColor="@color/accent"
+        android:textStyle="bold"
+        android:paddingTop="10dp"
+        android:paddingBottom="6dp"
+        android:textSize="14sp"/>
+
+    <!-- Packet list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/bg"/>
+
+</LinearLayout>

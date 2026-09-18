@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AkRamtcp</string>
+    <string name="start">▶ START</string>
+    <string name="stop">■ STOP</string>
+    <string name="status_idle">READY</string>
+    <string name="status_running">RUNNING</string>
+    <string name="apply_keys">APPLY</string>
+    <string name="total">TOTAL: 0</string>
+</resources>
