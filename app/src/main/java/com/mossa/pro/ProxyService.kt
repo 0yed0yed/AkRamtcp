@@ -31,6 +31,13 @@ class ProxyService : Service() {
 
         fun updateKeys(key: IntArray, iv: IntArray) {
             serverRef?.setKeys(key, iv)
+            try {
+                SecurePrefs.putString("active_key", key.joinToString(","))
+                SecurePrefs.putString("active_iv", iv.joinToString(","))
+                Log.i(TAG, "Keys updated + saved to prefs")
+            } catch (e: Exception) {
+                Log.e(TAG, "save keys: ${e.message}")
+            }
         }
     }
 

@@ -43,9 +43,12 @@ class HexActivity : AppCompatActivity() {
             return
         }
 
-        // احفظ المفاتيح مؤقتاً في الـ prefs — MainActivity هيقراها
+        // احفظ المفاتيح في الـ prefs — عشان تستمر بين الـ sessions
+        SecurePrefs.putString("active_key", result.keyCsv())
+        SecurePrefs.putString("active_iv", result.ivCsv())
         SecurePrefs.putString("pending_key", result.keyCsv())
         SecurePrefs.putString("pending_iv", result.ivCsv())
+        android.util.Log.i("HexActivity", "Keys saved to active_key/active_iv")
 
         Toast.makeText(this, "✓ تم استخراج المفاتيح", Toast.LENGTH_SHORT).show()
         goToMain()

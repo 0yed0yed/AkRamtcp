@@ -24,8 +24,21 @@ class Socks5Server(
     private val counter = AtomicInteger(0)
     private val pool = Executors.newCachedThreadPool()
 
-    @Volatile private var currentKey: IntArray = Config.DEFAULT_KEY.copyOf()
-    @Volatile private var currentIv: IntArray = Config.DEFAULT_IV.copyOf()
+    @Volatile private var currentKey: IntArray = loadKeyFromPrefs("active_key", Config.DEFAULT_KEY)
+    @Volatile private var currentIv: IntArray = loadKeyFromPrefs("active_iv", Config.DEFAULT_IV)
+
+    private fun loadKeyFromPrefs(prefKey: String, default: IntArray): IntArray {
+        return try {
+            val csv = SecurePrefs.getString(prefKey)
+            if (csv.isNullOrEmpty()) {
+                default.copyOf()
+            } else {
+                csv.split(",").map { it.trim().toInt() }.toIntArray()
+            }
+        } catch (e: Exception) {
+            default.copyOf()
+        }
+    }
 
     /**
      * يحدّث مفاتيح AES في وقت التشغيل.

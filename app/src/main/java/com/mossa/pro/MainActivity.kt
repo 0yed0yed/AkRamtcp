@@ -195,6 +195,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startProxy() {
+        // ✅ أولاً — مرر المفاتيح النشطة للـ service
+        val activeKey = SecurePrefs.getString("active_key")
+        val activeIv = SecurePrefs.getString("active_iv")
+        if (!activeKey.isNullOrEmpty() && !activeIv.isNullOrEmpty()) {
+            try {
+                val k = parseKey(activeKey)
+                val v = parseKey(activeIv)
+                if (k.size == 16 && v.size == 16) {
+                    ProxyService.updateKeys(k, v)
+                    Log.i(TAG, "Passed active keys to service")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "applyKeys on start: ${e.message}")
+            }
+        }
+
         val intent = Intent(this, ProxyService::class.java).apply {
             action = ProxyService.ACTION_START
         }
