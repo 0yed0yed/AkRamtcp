@@ -7,7 +7,22 @@ object ProtobufDecoder {
 
     fun decode(hex: String): Map<Int, Any>? {
         return try {
-            val data = hexToBytes(hex)
+            var clean = hex.replace(" ", "").replace("\n", "")
+            
+            // ✅ محاذاة على أول "08" (field 1 tag) — زي Python script
+            // نتخطى أي header داخلي
+            var startIdx = 0
+            for (i in 0 until clean.length - 1 step 2) {
+                if (clean.substring(i, i + 2) == "08") {
+                    startIdx = i
+                    break
+                }
+            }
+            if (startIdx > 0) {
+                clean = clean.substring(startIdx)
+            }
+            
+            val data = hexToBytes(clean)
             parseMessage(data, 0, data.size, depth = 0)
         } catch (e: Exception) {
             null
