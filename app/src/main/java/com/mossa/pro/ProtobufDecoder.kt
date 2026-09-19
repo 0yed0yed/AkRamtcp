@@ -1,16 +1,18 @@
 package com.mossa.pro
 
 /**
- * Protobuf decoder متقدم — يدعم nesting متعدد المستويات
+ * Protobuf decoder v3 — يدعم:
+ * - nesting متعدد المستويات
+ * - repeated fields (القوائم)
+ * - strings + bytes + varint + 64-bit + 32-bit
  */
 object ProtobufDecoder {
 
     fun decode(hex: String): Map<Int, Any>? {
         return try {
             var clean = hex.replace(" ", "").replace("\n", "")
-            
-            // ✅ محاذاة على أول "08" (field 1 tag) — زي Python script
-            // نتخطى أي header داخلي
+
+            // محاذاة على أول "08" — skip أي header داخلي
             var startIdx = 0
             for (i in 0 until clean.length - 1 step 2) {
                 if (clean.substring(i, i + 2) == "08") {
@@ -18,10 +20,8 @@ object ProtobufDecoder {
                     break
                 }
             }
-            if (startIdx > 0) {
-                clean = clean.substring(startIdx)
-            }
-            
+            if (startIdx > 0) clean = clean.substring(startIdx)
+
             val data = hexToBytes(clean)
             parseMessage(data, 0, data.size, depth = 0)
         } catch (e: Exception) {
@@ -30,26 +30,26 @@ object ProtobufDecoder {
     }
 
     private fun parseMessage(data: ByteArray, start: Int, end: Int, depth: Int): Map<Int, Any>? {
-        if (depth > 10) return null  // منع recursion لانهائي
+        if (depth > 10) return null
 
         val result = LinkedHashMap<Int, Any>()
         var pos = start
 
         while (pos < end) {
-            // اقرأ tag
-            val (tag, np1) = readVarint(data, pos) ?: break
-            pos = np1
+            val tagResult = readVarint(data, pos) ?: break
+            val tag = tagResult.first
+            pos = tagResult.second
 
             val fieldNum = (tag shr 3).toInt()
             val wireType = (tag and 0x7).toInt()
 
-            if (fieldNum < 1 || fieldNum > 536870911) break
+            if (fieldNum < 1) break
 
             when (wireType) {
                 0 -> {  // varint
-                    val (value, np) = readVarint(data, pos) ?: break
-                    pos = np
-                    result[fieldNum] = value
+                    val r = readVarint(data, pos) ?: break
+                    pos = r.second
+                    addValue(result, fieldNum, r.first)
                 }
 
                 1 -> {  // 64-bit
@@ -59,31 +59,28 @@ object ProtobufDecoder {
                         v = v or ((data[pos + i].toLong() and 0xFF) shl (8 * i))
                     }
                     pos += 8
-                    result[fieldNum] = v
+                    addValue(result, fieldNum, v)
                 }
 
                 2 -> {  // length-delimited
-                    val (len, np) = readVarint(data, pos) ?: break
-                    pos = np
-                    val lenInt = len.toInt()
+                    val r = readVarint(data, pos) ?: break
+                    pos = r.second
+                    val lenInt = r.first.toInt()
                     if (lenInt < 0 || pos + lenInt > end) break
 
                     val bytes = data.copyOfRange(pos, pos + lenInt)
                     pos += lenInt
 
-                    // حاول نفكها:
-                    // 1. nested message
+                    // جرب nested
                     val nested = tryParseNested(bytes, depth + 1)
                     if (nested != null && nested.isNotEmpty()) {
-                        result[fieldNum] = nested
+                        addValue(result, fieldNum, nested)
                     } else {
-                        // 2. نص
                         val text = tryDecodeString(bytes)
                         if (text != null) {
-                            result[fieldNum] = text
+                            addValue(result, fieldNum, text)
                         } else {
-                            // 3. bytes
-                            result[fieldNum] = bytesToHex(bytes)
+                            addValue(result, fieldNum, bytesToHex(bytes))
                         }
                     }
                 }
@@ -95,7 +92,7 @@ object ProtobufDecoder {
                         v = v or ((data[pos + i].toInt() and 0xFF) shl (8 * i))
                     }
                     pos += 4
-                    result[fieldNum] = v
+                    addValue(result, fieldNum, v)
                 }
 
                 else -> break
@@ -105,11 +102,30 @@ object ProtobufDecoder {
         return if (result.isEmpty()) null else result
     }
 
+    /**
+     * يضيف القيمة في الـ map — لو في قيمة موجودة بنفس الـ field → يحولها لـ List
+     */
+    private fun addValue(map: LinkedHashMap<Int, Any>, fieldNum: Int, value: Any) {
+        val existing = map[fieldNum]
+        when (existing) {
+            null -> map[fieldNum] = value
+            is MutableList<*> -> {
+                @Suppress("UNCHECKED_CAST")
+                (existing as MutableList<Any>).add(value)
+            }
+            else -> {
+                val list = mutableListOf<Any>()
+                list.add(existing)
+                list.add(value)
+                map[fieldNum] = list
+            }
+        }
+    }
+
     private fun tryParseNested(bytes: ByteArray, depth: Int): Map<Int, Any>? {
         if (bytes.isEmpty()) return null
         return try {
             val nested = parseMessage(bytes, 0, bytes.size, depth)
-            // لازم كل الـ field numbers تكون صالحة
             if (nested != null && nested.isNotEmpty() &&
                 nested.keys.all { it in 1..100000 }) nested else null
         } catch (e: Exception) {
@@ -119,15 +135,18 @@ object ProtobufDecoder {
 
     private fun tryDecodeString(bytes: ByteArray): String? {
         if (bytes.isEmpty()) return null
-        // لازم كل الـ bytes تكون printable ASCII أو UTF-8 صالح
-        try {
+        return try {
             val text = String(bytes, Charsets.UTF_8)
-            // لازم كل حرف يكون printable (مش control characters)
-            if (text.all { it.code in 0x09..0x7E || it.code in 0x0600..0x06FF || it.code in 0x00A0..0x00FF }) {
-                return text
-            }
-        } catch (e: Exception) {}
-        return null
+            if (text.all {
+                    it.code in 0x09..0x7E ||
+                    it.code in 0x0600..0x06FF ||    // Arabic
+                    it.code in 0x00A0..0x00FF        // Latin-1 supplement
+                }) {
+                text
+            } else null
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun readVarint(data: ByteArray, start: Int): Pair<Long, Int>? {
@@ -165,33 +184,39 @@ object ProtobufDecoder {
         return sb.toString()
     }
 
-    /**
-     * Formatted output للـ UI
-     */
     fun format(data: Map<Int, Any>?, indent: Int = 0): String {
         if (data == null || data.isEmpty()) return "{}"
         val sb = StringBuilder()
         sb.append("{\n")
         val spaces = "  ".repeat(indent + 1)
         data.forEach { entry ->
-            val k = entry.key
-            val v = entry.value
-            sb.append(spaces).append(k).append(": ")
-            when {
-                v is Map<*, *> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    sb.append(format(v as Map<Int, Any>, indent + 1))
-                }
-                v is String -> sb.append("\"").append(v).append("\"")
-                v is Long -> {
-                    // لو الرقم سالب كـ 64-bit (زي -1) نعرضه كـ 18446744073709551615
-                    sb.append(v.toString())
-                }
-                else -> sb.append(v.toString())
-            }
+            sb.append(spaces).append(entry.key).append(": ")
+            sb.append(formatValue(entry.value, indent + 1))
             sb.append(",\n")
         }
         sb.append("  ".repeat(indent)).append("}")
         return sb.toString()
+    }
+
+    private fun formatValue(v: Any?, indent: Int): String {
+        return when (v) {
+            null -> "null"
+            is Map<*, *> -> {
+                @Suppress("UNCHECKED_CAST")
+                format(v as Map<Int, Any>, indent)
+            }
+            is List<*> -> {
+                val sb = StringBuilder()
+                sb.append("[\n")
+                val spaces = "  ".repeat(indent + 1)
+                v.forEach { item ->
+                    sb.append(spaces).append(formatValue(item, indent + 1)).append(",\n")
+                }
+                sb.append("  ".repeat(indent)).append("]")
+                sb.toString()
+            }
+            is String -> "\"$v\""
+            else -> v.toString()
+        }
     }
 }
