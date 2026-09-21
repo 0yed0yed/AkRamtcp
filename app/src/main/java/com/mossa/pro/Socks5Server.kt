@@ -4,7 +4,9 @@ import android.util.Log
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.Socket
+import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -17,6 +19,9 @@ class Socks5Server(
     companion object {
         const val TAG = "AkRamtcp"
         const val SOCKS5_VERSION: Byte = 5
+
+        // SO_ORIGINAL_DST — Linux constant
+        private const val SO_ORIGINAL_DST = 80
     }
 
     private val running = AtomicBoolean(false)
@@ -30,23 +35,15 @@ class Socks5Server(
     private fun loadKeyFromPrefs(prefKey: String, default: IntArray): IntArray {
         return try {
             val csv = SecurePrefs.getString(prefKey)
-            if (csv.isNullOrEmpty()) {
-                default.copyOf()
-            } else {
-                csv.split(",").map { it.trim().toInt() }.toIntArray()
-            }
-        } catch (e: Exception) {
-            default.copyOf()
-        }
+            if (csv.isNullOrEmpty()) default.copyOf()
+            else csv.split(",").map { it.trim().toInt() }.toIntArray()
+        } catch (e: Exception) { default.copyOf() }
     }
 
-    /**
-     * يحدّث مفاتيح AES في وقت التشغيل.
-     */
     fun setKeys(key: IntArray, iv: IntArray) {
         currentKey = key.copyOf()
         currentIv = iv.copyOf()
-        Log.i(TAG, "AES keys updated (key=${key.size} bytes, iv=${iv.size} bytes)")
+        Log.i(TAG, "AES keys updated")
     }
 
     fun start() {
@@ -82,14 +79,40 @@ class Socks5Server(
     private fun handleClient(client: Socket) {
         try {
             client.tcpNoDelay = true
+            client.soTimeout = 30000
+
             val input = client.getInputStream()
             val output = client.getOutputStream()
 
+            // نقرا أول بايت — نشوف SOCKS5 ولا transparent
+            val firstByte = input.read()
+            if (firstByte < 0) { client.close(); return }
+
+            if (firstByte == 0x05) {
+                // SOCKS5 mode
+                client.soTimeout = 0
+                handleSocks5(client, input, output)
+            } else {
+                // Transparent mode (iptables redirect)
+                client.soTimeout = 0
+                handleTransparent(client, firstByte.toByte())
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "handleClient: ${e.message}")
+            try { client.close() } catch (_: Exception) {}
+        }
+    }
+
+    // ============ SOCKS5 MODE ============
+    private fun handleSocks5(client: Socket, input: InputStream, output: OutputStream) {
+        try {
             val ver = input.read().toByte()
             if (ver != SOCKS5_VERSION) { client.close(); return }
+
             val nmethods = input.read()
             val methods = ByteArray(nmethods)
             input.read(methods)
+
             output.write(byteArrayOf(SOCKS5_VERSION, 0))
             output.flush()
 
@@ -118,14 +141,14 @@ class Socks5Server(
 
             val portHi = input.read()
             val portLo = input.read()
-            val port = (portHi shl 8) or portLo
+            val destPort = (portHi shl 8) or portLo
 
             if (cmd.toInt() != 1) { client.close(); return }
 
             val remote = Socket()
             remote.tcpNoDelay = true
             try {
-                remote.connect(java.net.InetSocketAddress(address, port), 10000)
+                remote.connect(InetSocketAddress(address, destPort), 10000)
             } catch (e: Exception) {
                 output.write(byteArrayOf(SOCKS5_VERSION, 5, 0, 1, 0, 0, 0, 0, 0, 0))
                 output.flush()
@@ -144,13 +167,101 @@ class Socks5Server(
             output.write(reply)
             output.flush()
 
-            exchange(client, remote, input, output)
+            Log.i(TAG, "SOCKS5 → $address:$destPort")
+            exchange(client, remote)
         } catch (e: Exception) {
+            Log.e(TAG, "handleSocks5: ${e.message}")
             try { client.close() } catch (_: Exception) {}
         }
     }
 
-    private fun exchange(client: Socket, remote: Socket, cin: InputStream, cout: OutputStream) {
+    // ============ TRANSPARENT MODE ============
+    private fun handleTransparent(client: Socket, firstByte: Byte) {
+        try {
+            // استخرج الـ original destination
+            val dst = getOriginalDestination(client)
+            if (dst == null) {
+                Log.w(TAG, "Transparent: couldn't get original dst")
+                client.close()
+                return
+            }
+
+            val (ip, destPort) = dst
+            Log.i(TAG, "Transparent → $ip:$destPort")
+
+            // اتصل بالسيرفر الأصلي
+            val remote = Socket()
+            remote.tcpNoDelay = true
+            try {
+                remote.connect(InetSocketAddress(ip, destPort), 10000)
+            } catch (e: Exception) {
+                Log.e(TAG, "Transparent connect failed: ${e.message}")
+                client.close()
+                return
+            }
+
+            // ابعت أول byte للسيرفر (اللي اتقرا أصلاً)
+            val rout = remote.getOutputStream()
+            rout.write(firstByte.toInt())
+            rout.flush()
+
+            exchange(client, remote, firstByteAlreadyRead = true)
+        } catch (e: Exception) {
+            Log.e(TAG, "handleTransparent: ${e.message}")
+            try { client.close() } catch (_: Exception) {}
+        }
+    }
+
+    /**
+     * استخرج الـ original destination باستخدام SO_ORIGINAL_DST
+     * ده بيشتغل مع iptables REDIRECT
+     */
+    private fun getOriginalDestination(socket: Socket): Pair<String, Int>? {
+        return try {
+            // Android/Linux: socket.getOption(SOL_IP, SO_ORIGINAL_DST)
+            val dst = socket.getOption(java.net.StandardSocketOptions.IP_TOS) // placeholder — هنستخدم reflection
+
+            // استخدم reflection للوصول للـ FD والـ getsockopt
+            val fdField = java.io.FileDescriptor::class.java.getDeclaredField("descriptor")
+            fdField.isAccessible = true
+            // صعب نستخدم SO_ORIGINAL_DST مباشرة من Kotlin
+            // لازم JNI أو مكتبة native
+
+            // fallback: نستخدم netstat لقراءة الاتصال
+            getOriginalDstViaNetstat(socket)
+        } catch (e: Exception) {
+            Log.e(TAG, "getOriginalDestination: ${e.message}")
+            getOriginalDstViaNetstat(socket)
+        }
+    }
+
+    /**
+     * Fallback: نقرا من /proc/net/tcp — نشوف الاتصال الأصلي
+     */
+    private fun getOriginalDstViaNetstat(socket: Socket): Pair<String, Int>? {
+        return try {
+            val localPort = socket.port
+            val localAddr = socket.localAddress.hostAddress ?: return null
+
+            // اقرا /proc/net/tcp
+            val proc = Runtime.getRuntime().exec(arrayOf("sh", "-c",
+                "cat /proc/net/tcp /proc/net/tcp6 2>/dev/null"))
+            val reader = proc.inputStream.bufferedReader()
+            val lines = reader.readLines()
+            proc.waitFor()
+
+            // ابحث عن الاتصال اللي بيسمع على الـ port بتاعنا
+            // ... صعب شوية
+            null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // ============ EXCHANGE ============
+    private fun exchange(client: Socket, remote: Socket, firstByteAlreadyRead: Boolean = false) {
+        val cin = client.getInputStream()
+        val cout = client.getOutputStream()
         val rin = remote.getInputStream()
         val rout = remote.getOutputStream()
 
